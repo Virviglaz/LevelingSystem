@@ -1,0 +1,14 @@
+**/Objects/
+**/Debug/
+**/Release/
+**/settings/
+**/OUTPUT/
+**/packages/
+**/bin/
+**/obj/
+**/Listings/
+**/DebugConfig/
+**/SW v3.0 STM32/
+*.uv*
+*.log
+*.txt

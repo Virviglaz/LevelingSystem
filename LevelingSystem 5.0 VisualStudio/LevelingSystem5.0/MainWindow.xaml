@@ -1,0 +1,111 @@
+﻿<Window x:Name="MainWindow1" x:Class="LevelingSystem5._0.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:LevelingSystem5._0"
+        mc:Ignorable="d" Height="460.936" Width="843.846" ResizeMode="NoResize" Title="MMH Utility" Icon="MMH.ico" Closing="MainWindow_Closing">
+    <Grid x:Name="MainGrid1" Height="451" VerticalAlignment="Top" Margin="0,0,0,-19">
+        <Grid.Background>
+            <LinearGradientBrush EndPoint="0.5,1" StartPoint="0.5,0">
+                <GradientStop Color="#FF61A852" Offset="0"/>
+                <GradientStop Color="#FF23361F" Offset="1"/>
+            </LinearGradientBrush>
+        </Grid.Background>
+        <TabControl x:Name="tabControl" HorizontalAlignment="Left" Height="393" VerticalAlignment="Top" Width="414" Background="{x:Null}">
+            <TabItem x:Name="LevelingTab" Header="Leveling">
+                <Grid x:Name="LevelingGrid">
+                    <CheckBox x:Name="isLevelingOnBox" Content="Leveling" HorizontalAlignment="Left" Height="22" Margin="10,10,0,0" VerticalAlignment="Top" Width="125" Checked="isLevelingOnBox_Checked" Unchecked="isLevelingOnBox_Unchecked" ToolTip="Enable or disable leveling leds"/>
+                    <Button x:Name="button" Content="Calibrate zero position" HorizontalAlignment="Left" Height="24" Margin="10,334,0,0" VerticalAlignment="Top" Width="133" Click="button_Click" ToolTip="Calibrate for new offsets and update DB"/>
+                    <CheckBox x:Name="isRoughModeBox" Content="Coarse mode" HorizontalAlignment="Left" Height="21" Margin="10,37,0,0" VerticalAlignment="Top" Width="143" Checked="isRoughModeBox_Checked" Unchecked="isRoughModeBox_Unchecked" ToolTip="Coarse mode for lower accuracy"/>
+                    <CheckBox x:Name="isTestLedOnBox" Content="Test LEDs" HorizontalAlignment="Left" Height="26" Margin="10,63,0,0" VerticalAlignment="Top" Width="101" Checked="isTestLedOnBox_Checked" Unchecked="isTestLedOnBox_Unchecked" Cursor="" ToolTip="Service function: switch on all leds"/>
+                    <Ellipse x:Name="BigCircle" Fill="LightPink" Width="250" Height="250" />
+                    <Ellipse x:Name="BigCircleAim" Fill="LightGreen" Width="150" Height="150" />
+                    <Ellipse x:Name="AimCircle" Fill="Green" Width="50" Height="50" />
+                    <Label x:Name="X_Pos" Content="" HorizontalAlignment="Center" Height="35" Margin="158,17,160,312" VerticalAlignment="Center" Width="86" HorizontalContentAlignment="Center"/>
+                    <Label x:Name="Y_Pos" Content="" HorizontalAlignment="Center" Height="50" Margin="332,157,10,157" VerticalAlignment="Center" Width="62" HorizontalContentAlignment="Center"/>
+                    <Slider x:Name="LedBrighnessSlider" HorizontalAlignment="Left" Height="24" Margin="177,334,0,0" VerticalAlignment="Top" Width="217" Maximum="100" Minimum="5" ValueChanged="slider_ValueChanged" ToolTip="Realtime leds brightness adjustment"/>
+                    <Label x:Name="label" Content="Brighness" HorizontalAlignment="Left" Height="27" Margin="260,307,0,0" VerticalAlignment="Top" Width="79" Foreground="White"/>
+                    <Label x:Name="TimerLabel" Content="Turn off" HorizontalAlignment="Left" Height="32" Margin="10,297,0,0" VerticalAlignment="Top" Width="129" Foreground="White"/>
+                </Grid>
+            </TabItem>
+            <TabItem x:Name="MonitoringTab" Header="Monitoring">
+                <Grid x:Name="MonitoringGrid">
+                    <Label x:Name="SensorValue0" Content="" HorizontalAlignment="Left" Height="30" Margin="153,10,0,0" VerticalAlignment="Top" Width="120" BorderThickness="1" BorderBrush="Black" AllowDrop="True" MouseDoubleClick="SensorValue0_MouseDoubleClick" ToolTip="Double click here to store current sensor to this position"/>
+                    <Label x:Name="SensorValue1" Content="" HorizontalAlignment="Left" Height="30" Margin="153,45,0,0" VerticalAlignment="Top" Width="120" BorderThickness="1" BorderBrush="Black" MouseDoubleClick="SensorValue1_MouseDoubleClick" ToolTip="Double click here to store current sensor to this position"/>
+                    <Label x:Name="SensorValue2" Content="" HorizontalAlignment="Left" Height="30" Margin="153,80,0,0" VerticalAlignment="Top" Width="120" BorderThickness="1" BorderBrush="Black" MouseDoubleClick="SensorValue2_MouseDoubleClick" ToolTip="Double click here to store current sensor to this position"/>
+                    <Label x:Name="SensorValue3" Content="" HorizontalAlignment="Left" Height="30" Margin="153,115,0,0" VerticalAlignment="Top" Width="120" BorderThickness="1" BorderBrush="Black" MouseDoubleClick="SensorValue3_MouseDoubleClick" ToolTip="Double click here to store current sensor to this position"/>
+                    <Label x:Name="SensorValue4" Content="" HorizontalAlignment="Left" Height="30" Margin="153,150,0,0" VerticalAlignment="Top" Width="120" BorderThickness="1" BorderBrush="Black" MouseDoubleClick="SensorValue4_MouseDoubleClick" ToolTip="Double click here to store current sensor to this position"/>
+                    <Label x:Name="SensorValue5" Content="" HorizontalAlignment="Left" Height="30" Margin="278,10,0,0" VerticalAlignment="Top" Width="120" BorderThickness="1" BorderBrush="Black" MouseDoubleClick="SensorValue5_MouseDoubleClick" ToolTip="Double click here to store current sensor to this position"/>
+                    <Label x:Name="SensorValue6" Content="" HorizontalAlignment="Left" Height="30" Margin="278,45,0,0" VerticalAlignment="Top" Width="120" BorderThickness="1" BorderBrush="Black" MouseDoubleClick="SensorValue6_MouseDoubleClick" ToolTip="Double click here to store current sensor to this position"/>
+                    <Label x:Name="SensorValue7" Content="" HorizontalAlignment="Left" Height="30" Margin="278,80,0,0" VerticalAlignment="Top" Width="120" BorderThickness="1" BorderBrush="Black" MouseDoubleClick="SensorValue7_MouseDoubleClick" ToolTip="Double click here to store current sensor to this position"/>
+                    <Label x:Name="SensorValue8" Content="" HorizontalAlignment="Left" Height="30" Margin="278,115,0,0" VerticalAlignment="Top" Width="120" BorderThickness="1" BorderBrush="Black" MouseDoubleClick="SensorValue8_MouseDoubleClick" ToolTip="Double click here to store current sensor to this position"/>
+                    <Label x:Name="SensorValue9" Content="" HorizontalAlignment="Left" Height="30" Margin="278,150,0,0" VerticalAlignment="Top" Width="120" BorderThickness="1" BorderBrush="Black" MouseDoubleClick="SensorValue9_MouseDoubleClick" ToolTip="Double click here to store current sensor to this position"/>
+                    <CheckBox x:Name="SensLogEnable" Content="Log Data" HorizontalAlignment="Left" Height="20" Margin="278,220,0,0" VerticalAlignment="Top" Width="95" Checked="SensLogEnable_Checked" Unchecked="SensLogEnable_Unchecked" IsChecked="True" ToolTip="Enable or disable logging of monitored data"/>
+                    <Label x:Name="EXT_Humidity0" Content="" HorizontalAlignment="Left" Height="30" Margin="153,185,0,0" VerticalAlignment="Top" Width="120" BorderThickness="1" BorderBrush="Black"/>
+                    <Label x:Name="EXT_Humidity1" Content="" HorizontalAlignment="Left" Height="30" Margin="278,185,0,0" VerticalAlignment="Top" Width="120" BorderThickness="1" BorderBrush="Black"/>
+                    <Label x:Name="INT_Humidy" Content="" HorizontalAlignment="Left" Height="30" Margin="153,220,0,0" VerticalAlignment="Top" Width="120" BorderThickness="1" BorderBrush="Black"/>
+                    <ComboBox x:Name="SensListBox" HorizontalAlignment="Left" Height="30" Margin="153,255,0,0" VerticalAlignment="Top" Width="245" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" ToolTip="Current sensors list"/>
+                    <Button x:Name="SearchSensorsButton" Content="Search sensors" HorizontalAlignment="Left" Height="30" Margin="10,255,0,0" VerticalAlignment="Top" Width="138" Click="SearchSensorsButton_Click" ToolTip="Search for connected sensors and store their serial numbers to drop down list"/>
+                    <Button x:Name="InstalledSensorsButton" Content="Installed sensors" HorizontalAlignment="Left" Margin="10,290,0,0" VerticalAlignment="Top" Width="138" Height="30" Click="InstalledSensorsButton_Click" ToolTip="Fetch installed sensors and show them in drop down list"/>
+                    <Button x:Name="DeleteSensorButton" Content="Delete sensor" HorizontalAlignment="Left" Height="30" Margin="153,290,0,0" VerticalAlignment="Top" Width="245" Click="DeleteSensorButton_Click" IsEnabled="False" ToolTip="Delete choosen sensor for corresponding position"/>
+                    <CheckBox x:Name="Relay1CheckBox" Content="Relay 1" HorizontalAlignment="Left" Height="17" Margin="10,10,0,0" VerticalAlignment="Top" Width="108" RenderTransformOrigin="0.5,0.5" Checked="RelayValueChanged" Unchecked="RelayValueChanged"/>
+                    <CheckBox x:Name="Relay3CheckBox" Content="Relay 3" HorizontalAlignment="Left" Height="17" Margin="10,54,0,0" VerticalAlignment="Top" Width="108" RenderTransformOrigin="0.5,0.5" Checked="RelayValueChanged" Unchecked="RelayValueChanged"/>
+                    <CheckBox x:Name="Relay4CheckBox" Content="Relay 4" HorizontalAlignment="Left" Height="17" Margin="10,76,0,0" VerticalAlignment="Top" Width="108" RenderTransformOrigin="0.5,0.5" Checked="RelayValueChanged" Unchecked="RelayValueChanged"/>
+                    <CheckBox x:Name="Relay2CheckBox" Content="Relay 2" HorizontalAlignment="Left" Height="17" Margin="10,32,0,0" VerticalAlignment="Top" Width="108" RenderTransformOrigin="0.5,0.5" Checked="RelayValueChanged" Unchecked="RelayValueChanged"/>
+                    <CheckBox x:Name="Relay5CheckBox" Content="Relay 5" HorizontalAlignment="Left" Height="17" Margin="10,98,0,0" VerticalAlignment="Top" Width="108" RenderTransformOrigin="0.5,0.5" Checked="RelayValueChanged" Unchecked="RelayValueChanged"/>
+                    <CheckBox x:Name="Relay6CheckBox" Content="Relay 6" HorizontalAlignment="Left" Height="17" Margin="10,120,0,0" VerticalAlignment="Top" Width="108" RenderTransformOrigin="0.5,0.5" Checked="RelayValueChanged" Unchecked="RelayValueChanged"/>
+                    <CheckBox x:Name="Relay7CheckBox" Content="Relay 7" HorizontalAlignment="Left" Height="17" Margin="10,142,0,0" VerticalAlignment="Top" Width="108" RenderTransformOrigin="0.5,0.5" Checked="RelayValueChanged" Unchecked="RelayValueChanged"/>
+                    <CheckBox x:Name="Relay8CheckBox" Content="Relay 8" HorizontalAlignment="Left" Height="17" Margin="10,164,0,0" VerticalAlignment="Top" Width="108" RenderTransformOrigin="0.5,0.5" Checked="RelayValueChanged" Unchecked="RelayValueChanged"/>
+                    <Label x:Name="USB_VoltageLabel" Content="" HorizontalAlignment="Left" Height="30" Margin="10,220,0,0" VerticalAlignment="Top" Width="138" BorderThickness="1" BorderBrush="Black"/>
+                    <Label x:Name="PressureLabel" Content="" HorizontalAlignment="Left" Height="30" Margin="10,185,0,0" VerticalAlignment="Top" Width="138" BorderThickness="1" BorderBrush="Black"/>
+                </Grid>
+            </TabItem>
+            <TabItem x:Name="SettingsTabItem" Header="Settings">
+                <Grid x:Name="Settings_Grid">
+                    <TextBox x:Name="AutoOffTimerTextBox" HorizontalAlignment="Left" Height="24" Margin="231,10,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="163" KeyDown="AutoOffTimerTextBox_KeyDown" ToolTip="Value in seconds"/>
+                    <Label x:Name="AutoOffTimerLabel" Content="Leveling auto off timer value {s}" HorizontalAlignment="Left" Height="24" Margin="10,10,0,0" VerticalAlignment="Top" Width="216" Foreground="White" Padding="5,0" VerticalContentAlignment="Center" ToolTip="Amount of second before leveling will be automaticaly switched off"/>
+                    <Label x:Name="PositionNumLabel" Content="Leveling position {0..15}" HorizontalAlignment="Left" Height="24" Margin="10,39,0,0" VerticalAlignment="Top" Width="216" Foreground="White" Padding="5,0" VerticalContentAlignment="Center" ToolTip="Predefined position"/>
+                    <TextBox x:Name="PositionTextBox" HorizontalAlignment="Left" Height="23" Margin="231,40,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="163" KeyDown="PositionTextBox_KeyDown"/>
+                    <Label x:Name="ReadIntLabel_SI7005" Content="SI7005 Sensor read interval {s}" HorizontalAlignment="Left" Height="24" Margin="10,185,0,0" VerticalAlignment="Top" Width="211" Foreground="White" Padding="5,0" VerticalContentAlignment="Center" ToolTip="Predefined position"/>
+                    <Label x:Name="ReadIntLabel_BMP180_DataLabel" Content="BMP180 Sensor read interval {s}" HorizontalAlignment="Left" Height="24" Margin="10,213,0,0" VerticalAlignment="Top" Width="211" Foreground="White" Padding="5,0" VerticalContentAlignment="Center" ToolTip="Predefined position"/>
+                    <Label x:Name="LogToSDIntervalLabel" Content="Log to SD card interval {s}" HorizontalAlignment="Left" Height="24" Margin="10,242,0,0" VerticalAlignment="Top" Width="211" Foreground="White" Padding="5,0" VerticalContentAlignment="Center" ToolTip="Predefined position"/>
+                    <TextBox x:Name="SI7005_ReadIntervalTextBox" HorizontalAlignment="Left" Height="23" Margin="231,185,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="163" KeyDown="SI7005_ReadIntervalTextBox_KeyDown"/>
+                    <TextBox x:Name="BMP180_ReadIntervalTextBox" HorizontalAlignment="Left" Height="23" Margin="231,214,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="163" KeyDown="BMP180_ReadIntervalTextBox_KeyDown"/>
+                    <TextBox x:Name="SDCardLogIntervalTextBox" HorizontalAlignment="Left" Height="23" Margin="231,243,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="163" KeyDown="SDCardLogIntervalTextBox_KeyDown"/>
+                    <Button x:Name="GetSettingsButton" Content="Get Values" HorizontalAlignment="Left" Margin="231,329,0,0" VerticalAlignment="Top" Width="163" ToolTip="Fetch data from DB" Click="GetSettingsButton_Click"/>
+                    <Label x:Name="Norm_ZeroAreaSizeLabel" Content="Normal mode: Zero area size" HorizontalAlignment="Left" Height="24" Margin="10,68,0,0" VerticalAlignment="Top" Width="216" Foreground="White" Padding="5,0" VerticalContentAlignment="Center" ToolTip="Predefined position"/>
+                    <Label x:Name="Coarse_ZeroAreaSizeLabel" Content="Coarse mode: Zero area size" HorizontalAlignment="Left" Height="24" Margin="10,126,0,0" VerticalAlignment="Top" Width="216" Foreground="White" Padding="5,0" VerticalContentAlignment="Center" ToolTip="Predefined position"/>
+                    <Label x:Name="Norm_ZeroAreaSizeLabel_Copy" Content="Normal mode: Filter value" HorizontalAlignment="Left" Height="24" Margin="10,97,0,0" VerticalAlignment="Top" Width="216" Foreground="White" Padding="5,0" VerticalContentAlignment="Center" ToolTip="Predefined position"/>
+                    <Label x:Name="Coarse_ZeroAreaSizeLabel_Copy" Content="Coarse mode: Filter value" HorizontalAlignment="Left" Height="24" Margin="10,155,0,0" VerticalAlignment="Top" Width="216" Foreground="White" Padding="5,0" VerticalContentAlignment="Center" ToolTip="Predefined position"/>
+                    <TextBox x:Name="NormZeroSizeTextBox" HorizontalAlignment="Left" Height="23" Margin="231,69,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="163" KeyDown="NormZeroSizeTextBox_KeyDown"/>
+                    <TextBox x:Name="NormFilterValueTextBox" HorizontalAlignment="Left" Height="23" Margin="231,97,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="163" KeyDown="NormFilterValueTextBox_KeyDown"/>
+                    <TextBox x:Name="CoarseModeZeroSizeTextBox" HorizontalAlignment="Left" Height="23" Margin="231,127,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="163" KeyDown="CoarseModeZeroSizeTextBox_KeyDown"/>
+                    <TextBox x:Name="CoarseFilterValueTextBox" HorizontalAlignment="Left" Height="23" Margin="231,155,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="163" KeyDown="CoarseFilterValueTextBox_KeyDown"/>
+                </Grid>
+            </TabItem>
+            <TabItem x:Name="Relays" Header="IR" Width="50">
+                <Grid x:Name="IRGrid">
+                    <Button x:Name="TestIR_BTN1" Content="Test IR" HorizontalAlignment="Left" Margin="10,10,0,0" VerticalAlignment="Top" Width="75" ToolTip="Send IR signal" Click="TestIR_BTN1_Click"/>
+                </Grid>
+            </TabItem>
+            <TabItem Header="FIRMWARE">
+                <Grid x:Name="FW_Grid">
+                    <ProgressBar x:Name="BootLoaderProgressBar" HorizontalAlignment="Left" Height="22" Margin="132,37,0,0" VerticalAlignment="Top" Width="262"/>
+                    <Button x:Name="UploadFW_Button" Content="Upload File" HorizontalAlignment="Left" Height="22" Margin="10,37,0,0" VerticalAlignment="Top" Width="117" Click="UploadFW_Button_Click"/>
+                    <Button x:Name="ResetBtn" Content="Reset" HorizontalAlignment="Left" Margin="10,64,0,0" VerticalAlignment="Top" Width="117" Click="ResetBtn_Click"/>
+
+                </Grid>
+            </TabItem>
+        </TabControl>
+        <StatusBar x:Name="StatusBarBottom" HorizontalAlignment="Left" Height="33" Margin="0,393,0,0" VerticalAlignment="Top" Width="414" Background="{x:Null}">
+            <Grid Width="414" Height="26" HorizontalAlignment="Left" VerticalAlignment="Top" Background="#FF6EC572">
+                <RadioButton x:Name="ConnectedInd" Content="Disconnected" Height="18" Width="103" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="0,6,0,0" Background="White" ToolTip="Current device status"/>
+                <Button Content="Clear log" FontSize="9" Width="62" HorizontalAlignment="Left" VerticalAlignment="Top" Height="18" VerticalContentAlignment="Center" Click="Button_Click_1" Margin="246,5,0,0" ToolTip="Clear all logged data"/>
+                <CheckBox x:Name="AutoscrollCheckBox" Content="Autoscroll" Height="20" Width="84" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="313,6,0,0" IsChecked="True" Unchecked="AutoscrollCheckBox_Unchecked" Checked="AutoscrollCheckBox_Checked" Padding="0" ToolTip="Enable or disable autoscroll mode for logging"/>
+                <Label x:Name="DeviceTimeLabel" Content="00:00:00" HorizontalAlignment="Left" Margin="108,6,0,0" VerticalAlignment="Top" Height="17" Width="133" VerticalContentAlignment="Center" ScrollViewer.VerticalScrollBarVisibility="Disabled" Padding="0" HorizontalContentAlignment="Center" MouseDoubleClick="DeviceTimeLabel_MouseDoubleClick" ToolTip="Device time. Double click to adjust."/>
+            </Grid>
+        </StatusBar>
+        <ScrollViewer x:Name="TextOutput" HorizontalAlignment="Left" Height="395" Margin="419,25,0,0" VerticalAlignment="Top" Width="409" PanningMode="VerticalOnly" CanContentScroll="True" VerticalScrollBarVisibility="Auto"/>
+    </Grid>
+</Window>

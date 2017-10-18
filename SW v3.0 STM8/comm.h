@@ -1,0 +1,12 @@
+void RecoverSNData (void);
+void SaveSNData (u8 SNum);
+void inCommHandle (void);
+void SecondInterruptHandle (void);
+void NRF_DATA_Handle (char * Data);
+void PROTECT_FW_Handle (void);
+void DELETE_SENSOR_Handle (void);
+void SEARCH_SENSORS_Handle (void);
+void GET_INSTALLED_SENSORS_Handle (void);
+void RegNewKey_Handle (void);
+void Bootloader (void);
+void IR_Handle (void);

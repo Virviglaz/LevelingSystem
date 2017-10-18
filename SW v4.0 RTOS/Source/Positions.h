@@ -1,0 +1,2 @@
+
+void ChangeLevelingState (char State);
