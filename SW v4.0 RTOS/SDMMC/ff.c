@@ -2311,7 +2311,7 @@ FRESULT find_volume (	/* FR_OK(0): successful, !=0: any error occurred */
 #endif
 #endif
 	fs->fs_type = fmt;	/* FAT sub-type */
-	fs->id = ++Fsid;	/* File system mount ID */
+	fs->Id = ++Fsid;	/* File system mount ID */
 #if _FS_RPATH
 	fs->cdir = 0;		/* Set current directory to root */
 #endif
@@ -2336,7 +2336,7 @@ FRESULT validate (	/* FR_OK(0): The object is valid, !=0: Invalid */
 {
 	FIL *fil = (FIL*)obj;	/* Assuming offset of .fs and .id in the FIL/DIR structure is identical */
 
-	if (!fil || !fil->fs || !fil->fs->fs_type || fil->fs->id != fil->id)
+	if (!fil || !fil->fs || !fil->fs->fs_type || fil->fs->Id != fil->Id)
 		return FR_INVALID_OBJECT;
 
 	ENTER_FF(fil->fs);		/* Lock file system */
@@ -2530,7 +2530,7 @@ FRESULT f_open (
 			fp->cltbl = 0;						/* Normal seek mode */
 #endif
 			fp->fs = dj.fs;	 					/* Validate file object */
-			fp->id = fp->fs->id;
+			fp->Id = fp->fs->Id;
 		}
 	}
 
@@ -3172,7 +3172,7 @@ FRESULT f_opendir (
 					res = FR_NO_PATH;
 			}
 			if (res == FR_OK) {
-				dp->id = fs->id;
+				dp->Id = fs->Id;
 				res = dir_sdi(dp, 0);			/* Rewind directory */
 #if _FS_LOCK
 				if (res == FR_OK) {

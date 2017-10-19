@@ -9,7 +9,7 @@
 #include "rtc.h"
 #include "stm32_GPIO.h"
 #include "HW.h"
-#include "SW_I2C.h"
+#include "SW_I2C_Driver.h"
 #include "MPU6050.h"
 #include "BMP180.h"
 #include "SI7005.h"
@@ -23,7 +23,7 @@
 #include "BME280.h"
 
 /* Variables */
-extern I2C_SW_InitStructTypeDef I2C_Struct;
+extern SW_I2C_DriverStructTypeDef I2C_Struct;
 extern LevelingConfigStructTypeDef LevConfig;
 extern MPU6050_StructTypeDef MPU6050_Struct;
 extern BMP180_StructTypeDef BMP180_Struct;
@@ -42,11 +42,11 @@ void InitHW (void);
 void Init_SPI1 (void);
 void Init_TIM2 (void);
 RESET_Result CheckResetCause (void);
-char I2C_WriteReg (char I2C_Adrs, char Reg, char Value);
-char I2C_ReadReg  (char I2C_Adrs, char Reg, char * buf, char size);
-char I2C_WritePage (char I2C_Adrs, char * MemPos, char MemPosSize, char * buf, char size);
-char I2C_ReadPage  (char I2C_Adrs, char * MemPos, char MemPosSize, char * buf, char size);
-char MPU6050_CheckReadyPin (void);
+uint8_t I2C_WriteReg (uint8_t I2C_Adrs, uint8_t Reg, uint8_t Value);
+uint8_t I2C_ReadReg  (uint8_t I2C_Adrs, uint8_t Reg, uint8_t * buf, uint16_t size);
+uint8_t I2C_WritePage (uint8_t I2C_Adrs, uint8_t * MemPos, uint8_t MemPosSize, uint8_t * buf, uint16_t size);
+uint8_t I2C_ReadPage  (uint8_t I2C_Adrs, uint8_t * MemPos, uint8_t MemPosSize, uint8_t * buf, uint16_t size);
+uint16_t MPU6050_CheckReadyPin (void);
 void delay (unsigned int cycles);
 void Get_SerialNum(void);
 void Init_TIM4 (void);
@@ -123,6 +123,32 @@ int GeneralInit (void)
 	return TaskError ? 0 : 1;
 }
 
+void I2C_SCL_IO_Write (uint8_t state)
+{
+	state ? PIN_ON(I2C_SCL) : PIN_OFF(I2C_SCL);
+}
+
+void I2C_SDA_IO_Write (uint8_t state)
+{
+	state ? PIN_ON(I2C_SDA) : PIN_OFF(I2C_SDA);
+}
+
+uint16_t I2C_SDA_IO_Read (void)
+{
+	return PIN_SYG(I2C_SDA);
+}
+
+void I2C_DelayFunc (uint16_t ms)
+{
+	//vTaskDelay(1);
+	delay(ms);
+}
+
+void RTOS_Delay (uint16_t ms)
+{
+	vTaskDelay(ms);
+}
+
 void InitHW (void)
 {
 	extern void DataCollectorTask (void * pvArg);
@@ -144,15 +170,15 @@ void InitHW (void)
 	xFLASH_Semaphore = xSemaphoreCreateMutex();
 															
 	// Init I2C
-	I2C_Struct.delay_func = delay;
-	I2C_Struct.SCL_GPIO = GPIOB;
-	I2C_Struct.SDA_GPIO = GPIOB;
-	I2C_Struct.SCL_PIN = GPIO_Pin_6;
-	I2C_Struct.SDA_PIN = GPIO_Pin_7;
-	I2C_Struct.DelayValue = 20; //50 -> 130kHz clock														
-	
+	I2C_Struct.Delay_func = I2C_DelayFunc;
+	I2C_Struct.DelayValue = 50; //50 -> 130kHz clock
+	I2C_Struct.IO_SCL_Write = I2C_SCL_IO_Write;
+	I2C_Struct.IO_SDA_Write = I2C_SDA_IO_Write;
+	I2C_Struct.IO_SDA_Read = I2C_SDA_IO_Read;
+	SW_I2C_ASSIGN(&I2C_Struct);												
+
 	// Init pressure sensor
-	BMP180_Struct.delay_func = vTaskDelay;
+	BMP180_Struct.delay_func = RTOS_Delay;
 	BMP180_Struct.ReadReg = I2C_ReadReg;
 	BMP180_Struct.WriteReg = I2C_WriteReg;
 	BMP180_Struct.P_Oversampling = BMP180_OversamplingX8;
@@ -330,65 +356,63 @@ RESET_Result CheckResetCause (void)
 	return UNKNOWN;
 }
 
-char I2C_WriteReg (char I2C_Adrs, char Reg, char Value)
+uint8_t I2C_WriteReg (uint8_t I2C_Adrs, uint8_t Reg, uint8_t Value)
 {
-	unsigned char buf[1];
-	char Result;
+	uint8_t Result;
 	xSemaphoreTake (xI2C_Semaphore, portMAX_DELAY);
-	buf[0] = Value;
-	I2C_Struct.I2C_Address = I2C_Adrs;
-	I2C_Struct.Reg_AddressOrLen = Reg;
-	I2C_Struct.pBuffer = buf;
-	I2C_Struct.pBufferSize = 1;
-	if (SW_I2C_Check_Bus(&I2C_Struct)) Error.I2C++;
-	Result = (char)SW_I2C_Write_Reg(&I2C_Struct);
+	Result = SW_I2C_WR(I2C_Adrs, &Reg, 1, &Value, 1);
+	if (Result) 
+	{
+		Error.I2C++;
+		SW_I2C_RESET_BUS();
+	}
 	xSemaphoreGive (xI2C_Semaphore);
 	return Result;
 }
 
-char I2C_ReadReg (char I2C_Adrs, char Reg, char * buf, char size)
+uint8_t I2C_ReadReg (uint8_t I2C_Adrs, uint8_t Reg, uint8_t * buf, uint16_t size)
 {
-	char Result;
+	uint8_t Result;
 	xSemaphoreTake (xI2C_Semaphore, portMAX_DELAY);
-	I2C_Struct.I2C_Address = I2C_Adrs;
-	I2C_Struct.Reg_AddressOrLen = Reg;
-	I2C_Struct.pBuffer = (unsigned char*)buf;
-	I2C_Struct.pBufferSize = size;
-	if (SW_I2C_Check_Bus(&I2C_Struct)) Error.I2C++;
-	Result = (char)SW_I2C_Read_Reg(&I2C_Struct);
+	Result = SW_I2C_RD(I2C_Adrs, &Reg, 1, buf, size);
+	if (Result) 
+	{
+		Error.I2C++;
+		SW_I2C_RESET_BUS();
+	}
 	xSemaphoreGive (xI2C_Semaphore);
 	return Result;	
 }
 
-char I2C_WritePage (char I2C_Adrs, char * MemPos, char MemPosSize, char * buf, char size)
+uint8_t I2C_WritePage (uint8_t I2C_Adrs, uint8_t * MemPos, uint8_t MemPosSize, uint8_t * buf, uint16_t size)
 {
-	char Result;
+	uint8_t Result;
 	xSemaphoreTake (xI2C_Semaphore, portMAX_DELAY);
-	I2C_Struct.I2C_Address = I2C_Adrs;
-	I2C_Struct.Reg_Address = (unsigned char*) MemPos;
-	I2C_Struct.Reg_AddressOrLen = MemPosSize;
-	I2C_Struct.pBuffer = (unsigned char*)buf;
-	I2C_Struct.pBufferSize = size;
-	Result = (char)SW_I2C_Write_Page(&I2C_Struct);
+	Result = SW_I2C_WR(I2C_Adrs, MemPos, MemPosSize, buf, size);
+	if (Result) 
+	{
+		Error.I2C++;
+		SW_I2C_RESET_BUS();
+	}
 	xSemaphoreGive (xI2C_Semaphore);
 	return Result;
 }
 
-char I2C_ReadPage (char I2C_Adrs, char * MemPos, char MemPosSize, char * buf, char size)
+uint8_t I2C_ReadPage (uint8_t I2C_Adrs, uint8_t * MemPos, uint8_t MemPosSize, uint8_t * buf, uint16_t size)
 {
-	char Result;
+	uint8_t Result;
 	xSemaphoreTake (xI2C_Semaphore, portMAX_DELAY);
-	I2C_Struct.I2C_Address = I2C_Adrs;
-	I2C_Struct.Reg_Address = (unsigned char*) MemPos;
-	I2C_Struct.Reg_AddressOrLen = MemPosSize;
-	I2C_Struct.pBuffer = (unsigned char*)buf;
-	I2C_Struct.pBufferSize = size;
-	Result = (char)SW_I2C_Read_Page(&I2C_Struct);
+	Result = SW_I2C_RD(I2C_Adrs, MemPos, MemPosSize, buf, size);
+	if (Result) 
+	{
+		Error.I2C++;
+		SW_I2C_RESET_BUS();
+	}
 	xSemaphoreGive (xI2C_Semaphore);
 	return Result;	
 }
 
-char MPU6050_CheckReadyPin (void)
+uint16_t MPU6050_CheckReadyPin (void)
 {
 	return PIN_SYG(DRY);
 }

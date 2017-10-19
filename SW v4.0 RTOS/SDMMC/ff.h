@@ -81,7 +81,7 @@ typedef struct {
 	BYTE	n_fats;			/* Number of FAT copies (1 or 2) */
 	BYTE	wflag;			/* win[] flag (b0:dirty) */
 	BYTE	fsi_flag;		/* FSINFO flags (b7:disabled, b0:dirty) */
-	WORD	id;				/* File system mount ID */
+	WORD	Id;				/* File system mount ID */
 	WORD	n_rootdir;		/* Number of root directory entries (FAT12/16) */
 #if _MAX_SS != _MIN_SS
 	WORD	ssize;			/* Bytes per sector (512, 1024, 2048 or 4096) */
@@ -112,7 +112,7 @@ typedef struct {
 
 typedef struct {
 	FATFS*	fs;				/* Pointer to the related file system object (**do not change order**) */
-	WORD	id;				/* Owner file system mount ID (**do not change order**) */
+	WORD	Id;				/* Owner file system mount ID (**do not change order**) */
 	BYTE	flag;			/* File status flags */
 	BYTE	err;			/* Abort flag (error code) */
 	DWORD	fptr;			/* File read/write pointer (Zeroed on file open) */
@@ -141,7 +141,7 @@ typedef struct {
 
 typedef struct {
 	FATFS*	fs;				/* Pointer to the owner file system object (**do not change order**) */
-	WORD	id;				/* Owner file system mount ID (**do not change order**) */
+	WORD	Id;				/* Owner file system mount ID (**do not change order**) */
 	WORD	index;			/* Current read/write index number */
 	DWORD	sclust;			/* Table start cluster (0:Root dir) */
 	DWORD	clust;			/* Current cluster */

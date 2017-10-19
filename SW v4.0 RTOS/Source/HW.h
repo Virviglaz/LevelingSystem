@@ -32,6 +32,9 @@
 #define MCO											GPIOA, GPIO_Pin_8
 #define DRY											GPIOA, GPIO_Pin_15
 
+#define I2C_SCL									GPIOB, GPIO_Pin_6
+#define I2C_SDA									GPIOB, GPIO_Pin_7
+
 #define LED_OK_AN_TRIGGER				200
 #define USB_VOLTAGE							ADC_Channel_13
 #define LED_FB_ADC							ADC_Channel_1

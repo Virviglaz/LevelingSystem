@@ -58,7 +58,7 @@ DB_ErrorTypeDef StoreDB (LogSourceTypeDef Source)
 		if (Source == LogSourceEEPROM)
 		{
 			EEPROM_Struct.isWriting = 1;
-			EEPROM_Struct.buf = db;
+			EEPROM_Struct.buf = (uint8_t*)db;
 			EEPROM_Struct.Mem_adrs = 0;
 			EEPROM_Struct.size = db_size;
 			if (EEPROM_RW(&EEPROM_Struct)) 
@@ -91,7 +91,7 @@ DB_ErrorTypeDef RestoreDB (LogSourceTypeDef Source)
 	if (Source == LogSourceEEPROM)
 	{	
 		EEPROM_Struct.isWriting = 0;
-		EEPROM_Struct.buf = db;
+		EEPROM_Struct.buf = (uint8_t*)db;
 		EEPROM_Struct.Mem_adrs = 0;
 		EEPROM_Struct.size = db_size;
 		if (EEPROM_RW(&EEPROM_Struct))
