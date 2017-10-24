@@ -199,10 +199,10 @@ void LogToSD_Task (void * pvArg)
 	const char Csign[] = {0xB0, 'C'};
 	const char HumU[] = {0x25};
 	float TempConvRes;
-	char csv_out[10];
-	char txtlogDate[15];
+	static char csv_out[10];
+	static char txtlogDate[15];
 	//char csvLogDate[15];
-	char csvDateAndTime[20];
+	static char csvDateAndTime[20];
 	union
 	{
 		short Svar;

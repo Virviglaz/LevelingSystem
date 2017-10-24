@@ -4,6 +4,7 @@
 #include "HW.h"
 #include "data_collector.h"
 #include "stm32_GPIO.h"
+#include <stdio.h>
 
 /* Variables */
 UartRXTypeDef Uart;
@@ -38,3 +39,28 @@ void USART1_IRQHandler (void)
 	TIM4->CNT = 0;	
 	USART1->SR &= ~USART_SR_RXNE;
 }
+
+void vApplicationMallocFailedHook( void )
+{
+	/* Out of memory */
+
+}
+
+void vApplicationStackOverflowHook( TaskHandle_t xTask, signed char *pcTaskName )
+{
+	/* Stack overflow */
+	extern char PrintToFile (char * filename, char * buf);
+	char * buf = pvPortMalloc(100);
+	sprintf(buf, "Task: %s has reported stack overflow!", pcTaskName);
+	PrintToFile("ERRLOG.TXT", buf);
+	vPortFree(buf);
+}
+
+void AssertFailed (void)
+{
+	
+}
+
+/* Redefine stdlib functions */
+void * malloc(size_t s) { return pvPortMalloc(s); }
+void free( void *pv ) { vPortFree( pv ); }

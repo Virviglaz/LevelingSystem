@@ -405,7 +405,7 @@ extern "C" {
 #endif
 
 #ifndef configCHECK_FOR_STACK_OVERFLOW
-	#define configCHECK_FOR_STACK_OVERFLOW 0
+	#define configCHECK_FOR_STACK_OVERFLOW 1
 #endif
 
 /* The following event macros are embedded in the kernel API calls. */
@@ -681,7 +681,7 @@ extern "C" {
 #endif
 
 #ifndef configUSE_MALLOC_FAILED_HOOK
-	#define configUSE_MALLOC_FAILED_HOOK 0
+	#define configUSE_MALLOC_FAILED_HOOK 1
 #endif
 
 #ifndef portPRIVILEGE_BIT

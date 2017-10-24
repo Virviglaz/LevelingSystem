@@ -81,7 +81,7 @@ void DataCollectorTask (void * pvArg)
 	}
 	TaskError &= xTaskCreate(RTC_CorrectionTask, "RTC correction",  30, NULL, tskIDLE_PRIORITY + 1 , &vRTC_CorrectionTaskHandler);
 	TaskError &= xTaskCreate(ZeroPacketInitTask, "ZERO buffer USB",  50, NULL, tskIDLE_PRIORITY + 1 , &vZeroPacketInitTaskHandler);
-	TaskError &= xTaskCreate(LogToSD_Task, "Log to SD card",  100, NULL, tskIDLE_PRIORITY + 1 , &LogToSD_TaskHadler);
+	TaskError &= xTaskCreate(LogToSD_Task, "Log to SD card",  1000, NULL, tskIDLE_PRIORITY + 1 , &LogToSD_TaskHadler);
 	TaskError &= xTaskCreate(RLY_SW_Switch, "Relay Switch", 30, NULL, tskIDLE_PRIORITY + 1, NULL);
 	
 	if (!Error.SI7005)

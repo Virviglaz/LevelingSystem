@@ -119,7 +119,7 @@ int GeneralInit (void)
 	dbInit(crc32);
 	
 	TaskError &= xTaskCreate(InitTask, 			"Init Task",  1000, NULL, tskIDLE_PRIORITY + 1 , &vInitTaskHandler);
-	TaskError &= xTaskCreate(SD_ServiceTask, "SD Handler", 20, NULL, tskIDLE_PRIORITY + 1 , &vSD_ServiceTaskHandler);
+	TaskError &= xTaskCreate(SD_ServiceTask, "SD Handler", 50, NULL, tskIDLE_PRIORITY + 1 , &vSD_ServiceTaskHandler);
 	return TaskError ? 0 : 1;
 }
 
@@ -261,7 +261,7 @@ void InitHW (void)
 		ErrorHandle(MPU6050, "MPU6050 unknown error!\r\n");
 
 	
-	xTaskCreate(DataCollectorTask, "Data collector", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1 , &vDataCollectorTaskHandler);
+	xTaskCreate(DataCollectorTask, "Data collector", 250, NULL, tskIDLE_PRIORITY + 1 , &vDataCollectorTaskHandler);
 	PrintToFile(ErrLogFile, "Initialisation passed successfully!\r\n");
 	
 	LevConfig.RelaysState = (char)BKP_ReadBackupRegister(RelayStateAddress);
