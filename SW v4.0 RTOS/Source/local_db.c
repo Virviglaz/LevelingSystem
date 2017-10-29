@@ -19,7 +19,7 @@ char ValidateDB (void);
 extern LevelingConfigStructTypeDef LevConfig;
 extern PositionTypeDef Position;
 extern EEPROM_StructTypeDef EEPROM_Struct;
-extern MPU6050_StructTypeDef MPU6050_Struct;
+extern MPU6050_ZeroCalTypeDef MPU6050_ZeroCal;
 extern RTC_CorrectorStructTypeDef RTC_C;
 extern LogConfStructTypeDef LogConfig;
 extern char * ErrLogFile;
@@ -49,7 +49,7 @@ DB_ErrorTypeDef StoreDB (LogSourceTypeDef Source)
 	Result |= (DB_ErrorTypeDef) dbStoreData(PositionTagName, (char*)&Position, sizeof(Position), db);								//44
 	Result |= (DB_ErrorTypeDef) dbStoreData(RTC_CorrectorTagName, (char*)&RTC_C, sizeof(RTC_C), db);								//16
 	Result |= (DB_ErrorTypeDef) dbStoreData(LogConfigTagName, (char*)&LogConfig, sizeof(LogConfig), db);						//8
-	Result |= (DB_ErrorTypeDef) dbStoreData(MPU6050_TagName, (char*)&MPU6050_Struct, sizeof(MPU6050_Struct), db);		//52
+	Result |= (DB_ErrorTypeDef) dbStoreData(MPU6050_TagName, (char*)&MPU6050_ZeroCal, sizeof(MPU6050_ZeroCal), db);
 	
   db_size = dbGetSize(db);
 	
@@ -111,7 +111,7 @@ DB_ErrorTypeDef RestoreDB (LogSourceTypeDef Source)
 			Result |= (DB_ErrorTypeDef)dbReadData(PositionTagName, (char*)&Position, &BytesReaded, db);		//44
 			Result |= (DB_ErrorTypeDef)dbReadData(RTC_CorrectorTagName, (char*)&RTC_C, &BytesReaded, db);	//16	
 			Result |= (DB_ErrorTypeDef)dbReadData(LogConfigTagName, (char*)&LogConfig, &BytesReaded, db);	//8
-			Result |= (DB_ErrorTypeDef)dbReadData(MPU6050_TagName, (char*)&MPU6050_Struct, &BytesReaded, db);
+			Result |= (DB_ErrorTypeDef)dbReadData(MPU6050_TagName, (char*)&MPU6050_ZeroCal, &BytesReaded, db);
 			PrintIntDataToFile(ErrLogFile, "DB size: ", (int)dbGetSize(db), "bytes");
 			/*if (ValidateDB())
 			{

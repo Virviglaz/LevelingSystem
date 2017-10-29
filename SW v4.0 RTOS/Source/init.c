@@ -21,6 +21,7 @@
 #include "diskio.h"
 #include "CRC.h"
 #include "BME280.h"
+#include "Leveling.h"
 
 /* Variables */
 extern SW_I2C_DriverStructTypeDef I2C_Struct;
@@ -58,7 +59,6 @@ long CalcCRC32 (char * buf, long size);
 void Init_SPI2 (void);
 
 /* Tasks */
-TaskHandle_t	vInitTaskHandler;
 TaskHandle_t  vSD_ServiceTaskHandler;
 TaskHandle_t 	vDataCollectorTaskHandler;
 
@@ -118,8 +118,8 @@ int GeneralInit (void)
 	//dbInit(CalcCRC32);
 	dbInit(crc32);
 	
-	TaskError &= xTaskCreate(InitTask, 			"Init Task",  1000, NULL, tskIDLE_PRIORITY + 1 , &vInitTaskHandler);
-	TaskError &= xTaskCreate(SD_ServiceTask, "SD Handler", 50, NULL, tskIDLE_PRIORITY + 1 , &vSD_ServiceTaskHandler);
+	TaskError &= xTaskCreate(InitTask, 			"Init Task",  1000, NULL, tskIDLE_PRIORITY + 1, NULL);
+	TaskError &= xTaskCreate(SD_ServiceTask, "SD Handler", 50, NULL, tskIDLE_PRIORITY + 1, &vSD_ServiceTaskHandler);
 	return TaskError ? 0 : 1;
 }
 
@@ -217,7 +217,7 @@ void InitHW (void)
 	EEPROM_Struct.PageSize = PageSizeBytes;
 	EEPROM_Struct.PageWriteTime = I2c_EEPROM_WriteTime_ms;
 	EEPROM_Struct.Mem_adrs = 0;
-	
+
 	/* DB restore */
 #ifdef DEBUG
 	if (RCC->CSR & RCC_CSR_IWDGRSTF)	
@@ -244,17 +244,7 @@ void InitHW (void)
 	}
 	
 	// Init accelerometer
-	MPU6050_Struct.delay_func = vTaskDelay;
-	MPU6050_Struct.ReadReg = I2C_ReadReg;
-	MPU6050_Struct.WriteReg = I2C_WriteReg;
-	MPU6050_Struct.I2C_Adrs = 0xD0;
-	MPU6050_Struct.GyroScale = GYRO_0250d_s;
-	MPU6050_Struct.AccelScale = Scale_2g;
-	MPU6050_Struct.FilterOrder = 6;
-	MPU6050_Struct.UseRDYpin = 0;
-	MPU6050_Struct.GyroSampleRateHz = 10;
-	MPU6050_Struct.CheckRDY_pin = MPU6050_CheckReadyPin;
-	Error.MPU6050 = MPU6050_Init(&MPU6050_Struct);
+	Error.MPU6050 = LevelingInit();
 	if (Error.MPU6050 == I2C_ADD_NOT_EXIST)
 		ErrorHandle(MPU6050, "MPU6050 does not answer!\r\n");
 	else if (Error.MPU6050)
@@ -356,6 +346,19 @@ RESET_Result CheckResetCause (void)
 	return UNKNOWN;
 }
 
+void I2C_ResetBus (void)
+{
+	PIN_OUT_PP(I2C_SDA);
+	PIN_OUT_PP(I2C_SCL);
+	PIN_ON(I2C_SDA);
+	PIN_ON(I2C_SCL);
+	vTaskDelay(50);
+	PIN_OUT_OD(I2C_SDA);
+	PIN_OUT_OD(I2C_SCL);
+	PIN_ON(I2C_SDA);
+	PIN_ON(I2C_SCL);
+}
+
 uint8_t I2C_WriteReg (uint8_t I2C_Adrs, uint8_t Reg, uint8_t Value)
 {
 	uint8_t Result;
@@ -365,6 +368,7 @@ uint8_t I2C_WriteReg (uint8_t I2C_Adrs, uint8_t Reg, uint8_t Value)
 	{
 		Error.I2C++;
 		SW_I2C_RESET_BUS();
+		//I2C_ResetBus();
 	}
 	xSemaphoreGive (xI2C_Semaphore);
 	return Result;
@@ -379,6 +383,7 @@ uint8_t I2C_ReadReg (uint8_t I2C_Adrs, uint8_t Reg, uint8_t * buf, uint16_t size
 	{
 		Error.I2C++;
 		SW_I2C_RESET_BUS();
+		//I2C_ResetBus();
 	}
 	xSemaphoreGive (xI2C_Semaphore);
 	return Result;	
@@ -393,6 +398,7 @@ uint8_t I2C_WritePage (uint8_t I2C_Adrs, uint8_t * MemPos, uint8_t MemPosSize, u
 	{
 		Error.I2C++;
 		SW_I2C_RESET_BUS();
+		//I2C_ResetBus();
 	}
 	xSemaphoreGive (xI2C_Semaphore);
 	return Result;
@@ -407,6 +413,7 @@ uint8_t I2C_ReadPage (uint8_t I2C_Adrs, uint8_t * MemPos, uint8_t MemPosSize, ui
 	{
 		Error.I2C++;
 		SW_I2C_RESET_BUS();
+		//I2C_ResetBus();
 	}
 	xSemaphoreGive (xI2C_Semaphore);
 	return Result;	

@@ -35,6 +35,7 @@ void GetSettingsHandler (void);
 void SaveFileHandler (void);
 void DefineFileName (void);
 void FileFinish (void);
+extern void CallibrateZeroPositionHandle (void);
 
 /* Variables */
 USBStructTypeDef USB;
@@ -50,7 +51,6 @@ extern PositionTypeDef Position;
 extern char * ErrLogFile;
 extern LevelingConfigStructTypeDef LevConfig;
 extern SensorListStructTypeDef SensList;
-extern KalmanFloatStructTypeDef Kx, Ky, Kz;
 extern LogConfStructTypeDef LogConfig;
 V32_TypeDef V32;
 char FileName[15];
@@ -277,21 +277,6 @@ void USB_SetTime (void)
 	rtc_settime(&DateAndTime);
 }
 
-void CallibrateZeroPositionHandle (void)
-{
-	char * buf;
-	MPU6050_CalibrateZero(&MPU6050_Struct);
-	UpdateDB();
-	buf = pvPortMalloc(50);
-	if (buf != NULL)
-	{
-		sprintf(buf, "Calibrated to Zero position. Offsets: %i, %i, %i\r\n%c", 
-			MPU6050_Struct.x_offset, MPU6050_Struct.y_offset, MPU6050_Struct.z_offset, 0);
-		PrintToFile(ErrLogFile, buf);
-	}
-	vPortFree(buf);
-}
-
 void InstallNewSensorHandle (void)
 {
 	char dat[2];
@@ -344,6 +329,7 @@ void SEARCH_SENSORS_Handle (void)
 
 void EnableFloatMode (char FloatState)
 {
+	extern KalmanFloatStructTypeDef Kx, Ky, Kz;
 	if (FloatState)
 	{
 		/* Floating values rude mode */

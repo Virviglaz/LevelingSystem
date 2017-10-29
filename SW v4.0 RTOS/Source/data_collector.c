@@ -1,7 +1,6 @@
 #include "data_collector.h"
 #include "error_collector.h"
 #include "data_logger.h"
-#include "Positions.h"
 #include "local_db.h"
 #include "FreeRTOS.h"
 #include "task.h"
@@ -9,7 +8,6 @@
 #include "MPU6050.h"
 #include "BMP180.h"
 #include "SI7005.h"
-#include "kalman.h"
 #include "stm32_GPIO.h"
 #include <math.h>
 #include "strings.h"
@@ -17,10 +15,10 @@
 #include "rtc.h"
 #include "HID_Commands.h"
 #include "BME280.h"
+#include "Leveling.h"
+#include "Positions.h"
 
 /* Functions */
-extern void Position_0 (PositionTypeDef * Pos);
-extern void (*const PositionTable[])(PositionTypeDef * Pos);
 void UartDataHandler (void);
 
 /* Tasks */
@@ -41,7 +39,6 @@ TaskHandle_t vZeroPacketInitTaskHandler;
 TaskHandle_t LogToSD_TaskHadler;
 
 /* Variables */
-extern MPU6050_StructTypeDef MPU6050_Struct;
 extern BMP180_StructTypeDef BMP180_Struct;
 extern SI7005_StructTypeDef SI7005_Struct;
 extern ErrorTypeDef Error;
@@ -50,10 +47,8 @@ extern USBStructTypeDef USB;
 extern RTC_t DateAndTime;
 extern char * ErrLogFile;
 extern LevelingConfigStructTypeDef LevConfig;
-extern PositionTypeDef Position;
 extern LogConfStructTypeDef LogConfig;
 extern RTC_CorrectorStructTypeDef RTC_C;
-extern KalmanFloatStructTypeDef Kx, Ky, Kz;
 
 const int BlinkFreqTablen[] = {1000, 500, 333, 250, 200, 167, 143, 125, 111, 100};
 const int BlinkFreqTable[] = {100, 111, 125, 143, 167, 200, 250, 333, 500, 1000};
@@ -63,6 +58,7 @@ SensorListStructTypeDef SensList;
 
 long AutoOffTimerInit (void)
 {
+	extern PositionTypeDef Position;
 	vTaskResume(vLebBlinkTaskD1Handler);
 	vTaskResume(vLebBlinkTaskD2Handler);
 	vTaskResume(vLevelingTaskHandler);
@@ -75,7 +71,7 @@ void DataCollectorTask (void * pvArg)
 
 	if (!Error.MPU6050)
 	{
-		TaskError &= xTaskCreate(LevelingTask, "Leveling Task",  120, NULL, tskIDLE_PRIORITY + 2, &vLevelingTaskHandler);	
+		
 		TaskError &= xTaskCreate(LebBlinkTaskD1, "Leds Task 1",  70, NULL, tskIDLE_PRIORITY + 3 , &vLebBlinkTaskD1Handler);
 		TaskError &= xTaskCreate(LebBlinkTaskD2, "Leds Task 2",  70, NULL, tskIDLE_PRIORITY + 3 , &vLebBlinkTaskD2Handler);
 	}
@@ -107,57 +103,12 @@ void DataCollectorTask (void * pvArg)
 	}
 }
 
-void LevelingTask (void * pvArg)
-{
-	LevConfig.AutoOffTimerS = AutoOffTimerInit();
-	vTaskDelay(1000);
-	while(MPU6050_GetResult(&MPU6050_Struct));
-	Kx.Previous = (float)MPU6050_Struct.x;
-	Ky.Previous = (float)MPU6050_Struct.y;
-	Kz.Previous = (float)MPU6050_Struct.z;
-	Kx.K = LevConfig.Kp;
-	Ky.K = LevConfig.Kp;
-	Kz.K = LevConfig.Kp;
-	if (LevConfig.PositionNum > 15) LevConfig.PositionNum = 0;
-	LevConfig.PosCalc = PositionTable[LevConfig.PositionNum];
-	TIM_SetCompare3(TIM2, LevConfig.LedBrightness);
-	
-	while(1)
-	{
-		vTaskDelay(LevConfig.delay);
-		if (Position.LevelingIsOn)
-		{			
-			if (!MPU6050_GetResult(&MPU6050_Struct))
-			{
-				Kx.Value = (float)MPU6050_Struct.x;
-				Ky.Value = (float)MPU6050_Struct.y;
-				Kz.Value = (float)MPU6050_Struct.z;
-				
-				KalmanFloatCalc(&Kx);
-				KalmanFloatCalc(&Ky);
-				KalmanFloatCalc(&Kz);
-				
-				Position.x = Kx.Result;
-				Position.y = Ky.Result;
-				Position.z = Kz.Result;
-
-				LevConfig.PosCalc(&Position);
-			}
-
-			if (LevConfig.AutoOffTimerS) 
-				LevConfig.AutoOffTimerS--;
-			else 
-				Position.LevelingIsOn = 0;			
-		}
-		else
-			vTaskSuspend( NULL );
-	}
-}
-
 void LebBlinkTaskD1 (void * pvArg)
 {
+	extern PositionTypeDef Position;
 	const PIN_TypeDef D1_PINs[] = {FLU_LED, FLM_LED, FLD_LED, RRU_LED, RRM_LED, RRD_LED};
 	char cnt;
+
 	while(1)
 	{
 		for (cnt = 0; cnt != 6; cnt++) //switch off all leds
@@ -195,8 +146,10 @@ void LebBlinkTaskD1 (void * pvArg)
 
 void LebBlinkTaskD2 (void * pvArg)
 {
+	extern PositionTypeDef Position;
 	const PIN_TypeDef D2_PINs[] = {FRU_LED, FRM_LED, FRD_LED, RLU_LED, RLM_LED, RLD_LED};
 	char cnt;
+
 	while(1)
 	{
 		for (cnt = 0; cnt != 6; cnt++) //switch off all leds
