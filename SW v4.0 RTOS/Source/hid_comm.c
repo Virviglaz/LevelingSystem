@@ -39,6 +39,7 @@ extern void CallibrateZeroPositionHandle (void);
 
 /* Variables */
 USBStructTypeDef USB;
+BYTE * USB_TX_Buffer = 0;
 extern BYTE EP0Buf[USB_MAX_PACKET0];
 extern MPU6050_StructTypeDef MPU6050_Struct;
 extern BMP180_StructTypeDef BMP180_Struct;
@@ -61,43 +62,47 @@ void ChangeSettingsTask (void * pvArg);
 void SaveFileTask (void * pvArg);
 
 /* Mutex */
-extern SemaphoreHandle_t xUSB_TX_Semaphore;
 extern SemaphoreHandle_t xFLASH_Semaphore;
+extern SemaphoreHandle_t xUSB_RX_Semaphore;
+extern SemaphoreHandle_t xUSB_TX_Semaphore;
+extern SemaphoreHandle_t xUSB_ZX_Semaphore;
 
 void GetReportToPC (void)
 {
-	if (USB.TX_DataReadyFlag)
+	static BaseType_t xHigherPriorityTaskWoken;
+	
+	if (xSemaphoreTakeFromISR(xUSB_TX_Semaphore, &xHigherPriorityTaskWoken) == pdTRUE)
 	{
-		USB_WriteEP(EP1_IN, (BYTE*)USB.TX_Buffer, sizeof(USB.TX_Buffer));
-		USB.TX_DataReadyFlag = RESET;
-		USB.LastPackageZeroFlag = RESET;
+		USB_WriteEP(EP1_IN, USB.TX_Buffer, USB_PACKET_LEN);
+		return;
 	}
-	else
+	
+	if (xSemaphoreTakeFromISR(xUSB_ZX_Semaphore, &xHigherPriorityTaskWoken) == pdTRUE)
 	{
-		if (USB.LastPackageZeroFlag)
-			EP_Status(EP1_IN, EP_TX_VALID);
-		else
-		{
-			USB_WriteEP(EP1_IN, (BYTE*)USB.ZERO_Buffer, sizeof(USB.ZERO_Buffer));
-			USB.LastPackageZeroFlag = SET;
-		}
+		USB_WriteEP(EP1_IN, USB.ZERO_Buffer, USB_PACKET_LEN);
+		return;
 	}
-	xSemaphoreGive (xUSB_TX_Semaphore);
+	
+	USB_WriteEP(EP1_IN, USB.NOP_Buffer, USB_PACKET_LEN);
 }
 
 void ReportFromPCHandle (void)
 {
-	USB.RX_Buffer = (char*)EP0Buf;
-	USB_WriteEP(EP1_IN, (BYTE*)USB.ZERO_Buffer, sizeof(USB.ZERO_Buffer));
-	USB.RX_ReadyFlag = SET;
+	static BaseType_t xHigherPriorityTaskWoken;
+	memcpy(USB.RX_Buffer, EP0Buf, USB_PACKET_LEN);
+	xSemaphoreGiveFromISR(xUSB_RX_Semaphore, &xHigherPriorityTaskWoken);
 }
 
 void ZeroPacketInitTask (void * pvArg)
 {
-	short ADC_Res;
+	memset(USB.NOP_Buffer, 0, USB_PACKET_LEN);
+	
 	while(1)
 	{
+		short ADC_Res;
+		
 		vTaskDelay(250);
+		
 		rtc_gettime(&DateAndTime);
 		ADC_Res = ADC_Get_Result(USB_VOLTAGE);
 	
@@ -154,114 +159,118 @@ void ZeroPacketInitTask (void * pvArg)
 		USB.ZERO_Buffer[42] = V32.bVar[1];
 		USB.ZERO_Buffer[43] = V32.bVar[0];
 
-		USB.LastPackageZeroFlag = RESET;
+		xSemaphoreGive(xUSB_ZX_Semaphore);
 	}
 }
 
-void USB_RX_DataHandler (void)
+void USB_RX_DataHandler (void * pvArg)
 {
-	if (USB.RX_ReadyFlag == RESET) return;
-	USB.RX_ReadyFlag = RESET;
-	
-	switch (USB.RX_Buffer[0])
+	while(1)
 	{
-		case TurnOnLevelingSystem: 				ChangeLevelingState(ENABLE);				break;
-		case TurnOffLevelingSystem: 			ChangeLevelingState(DISABLE);				break;
-		case InstallNewSensor:						InstallNewSensorHandle();						break;
-		case SetTime: 										USB_SetTime();											break;
-		case CallibrateZeroPosition:			CallibrateZeroPositionHandle(); 		break;
-		case DELETE_SENSOR_COMM:					DELETE_SENSOR_COMM_Handle();				break;
-		case SET_LEDS_BRIGHTNESS:					SET_LEDS_BRIGHTNESS_Handle();				break;
-		case SearchSensorsRoutine:				SEARCH_SENSORS_Handle();						break;
-		case EnableFloatingMode:					EnableFloatMode(ENABLE);						break;
-		case DisableFloatingMode:					EnableFloatMode(DISABLE);						break;
-		case LED_TEST_ROUTINE:						LED_TEST_ROUTINE_Handle();					break;
-		case ADDLEDSChangeState:					TurnOnAddLEDn(USB.RX_Buffer[1], USB.RX_Buffer[2], USB.RX_Buffer[3], USB.RX_Buffer[4]); break;
-		case GET_INSTALLED_SENSORS:				GetInstalledSensors_Command();			break;
-		case RelayChangeState:						LevConfig.RelaysState = USB.RX_Buffer[1]; break;
-		case IR_COMMAND:									IR_Handle();												break;
-		case ChangeSettingsCommand:				ChangeSettingsHandler();						break;
-		case GetSettingsCommand:					GetSettingsHandler();								break;
-		case SaveFileDefineNameCommand:		SaveFileHandler();									break;
-		case PERFORM_SW_RESET:						NVIC_SystemReset();									break;
-		case SaveFileDefineName:					DefineFileName(); 									break;
-		case SaveFileFinishedCommand:			FileFinish();												break;
+		if (xSemaphoreTake(xUSB_RX_Semaphore, portMAX_DELAY) == pdTRUE) 
+			switch (USB.RX_Buffer[0])
+			{
+				case TurnOnLevelingSystem: 				ChangeLevelingState(ENABLE);				break;
+				case TurnOffLevelingSystem: 			ChangeLevelingState(DISABLE);				break;
+				case InstallNewSensor:						InstallNewSensorHandle();						break;
+				case SetTime: 										USB_SetTime();											break;
+				case CallibrateZeroPosition:			CallibrateZeroPositionHandle(); 		break;
+				case DELETE_SENSOR_COMM:					DELETE_SENSOR_COMM_Handle();				break;
+				case SET_LEDS_BRIGHTNESS:					SET_LEDS_BRIGHTNESS_Handle();				break;
+				case SearchSensorsRoutine:				SEARCH_SENSORS_Handle();						break;
+				case EnableFloatingMode:					EnableFloatMode(ENABLE);						break;
+				case DisableFloatingMode:					EnableFloatMode(DISABLE);						break;
+				case LED_TEST_ROUTINE:						LED_TEST_ROUTINE_Handle();					break;
+				case ADDLEDSChangeState:					TurnOnAddLEDn(USB.RX_Buffer[1], USB.RX_Buffer[2], USB.RX_Buffer[3], USB.RX_Buffer[4]); break;
+				case GET_INSTALLED_SENSORS:				GetInstalledSensors_Command();			break;
+				case RelayChangeState:						LevConfig.RelaysState = USB.RX_Buffer[1]; break;
+				case IR_COMMAND:									IR_Handle();												break;
+				case ChangeSettingsCommand:				ChangeSettingsHandler();						break;
+				case GetSettingsCommand:					GetSettingsHandler();								break;
+				case SaveFileDefineNameCommand:		SaveFileHandler();									break;
+				case PERFORM_SW_RESET:						NVIC_SystemReset();									break;
+				case SaveFileDefineName:					DefineFileName(); 									break;
+				case SaveFileFinishedCommand:			FileFinish();												break;
+			}
 	}
 }
 
-void USB_TX_DataHandler (void)
+void USB_TX_DataHelper (void)
 {
 	char cnt;
-	if (USB.TX_DataReadyFlag) return;
-
 	for (cnt = 0; cnt != MaxSensors; cnt++)
 		if (SensList.OneWireSensors[cnt].isDataUpdated)
 		{
-			if (xSemaphoreTake (xUSB_TX_Semaphore, portMAX_DELAY) != pdTRUE) return;
-			USB.TX_Buffer[0] = GetTempResultSenseNum;
-			USB.TX_Buffer[1] = SensList.OneWireSensors[cnt].Err | (cnt << 4); //SNum + ErrCode
-			USB.TX_Buffer[2] = SensList.OneWireSensors[cnt].Res[0]; //H temp data
-			USB.TX_Buffer[3] = SensList.OneWireSensors[cnt].Res[1]; //L temp data
-			USB.TX_Buffer[4] = 0;
-			SensList.OneWireSensors[cnt].isDataUpdated = RESET;
-			USB.TX_DataReadyFlag = SET;	
-			return;
+				USB.TX_Buffer[0] = GetTempResultSenseNum;
+				USB.TX_Buffer[1] = SensList.OneWireSensors[cnt].Err | (cnt << 4); //SNum + ErrCode
+				USB.TX_Buffer[2] = SensList.OneWireSensors[cnt].Res[0]; //H temp data
+				USB.TX_Buffer[3] = SensList.OneWireSensors[cnt].Res[1]; //L temp data
+				USB.TX_Buffer[4] = 0;
+				SensList.OneWireSensors[cnt].isDataUpdated = RESET;
+				xSemaphoreGive(xUSB_TX_Semaphore);
+				return;
 		}
-	
+		
 	if (SensList.intBMP180.isDataUpdated)
-	 {
-		 if (xSemaphoreTake (xUSB_TX_Semaphore, portMAX_DELAY) != pdTRUE) return;
-		 USB.TX_Buffer[0] =  BMP180_ResultReady;
-		 
-		 V32.lVar = (long)SensList.intBMP180.Pressure;
-		 USB.TX_Buffer[1] =  V32.bVar[3];
-		 USB.TX_Buffer[2] =  V32.bVar[2];
-		 USB.TX_Buffer[3] =  V32.bVar[1];
-		 USB.TX_Buffer[4] =  V32.bVar[0];
-     
-		 V32.lVar = (long)SensList.intBMP180.Altitude;
-		 USB.TX_Buffer[5] =  V32.bVar[3];
-		 USB.TX_Buffer[6] =  V32.bVar[2];
-		 USB.TX_Buffer[7] =  V32.bVar[1];
-		 USB.TX_Buffer[8] =  V32.bVar[0];
+		{
+			 USB.TX_Buffer[0] =  BMP180_ResultReady;
+			 
+			 V32.lVar = (long)SensList.intBMP180.Pressure;
+			 USB.TX_Buffer[1] =  V32.bVar[3];
+			 USB.TX_Buffer[2] =  V32.bVar[2];
+			 USB.TX_Buffer[3] =  V32.bVar[1];
+			 USB.TX_Buffer[4] =  V32.bVar[0];
+			 
+			 V32.lVar = (long)SensList.intBMP180.Altitude;
+			 USB.TX_Buffer[5] =  V32.bVar[3];
+			 USB.TX_Buffer[6] =  V32.bVar[2];
+			 USB.TX_Buffer[7] =  V32.bVar[1];
+			 USB.TX_Buffer[8] =  V32.bVar[0];
 
-		 V32.sVar[0] = (short)SensList.intBMP180.mmHg;
-		 USB.TX_Buffer[9] =  V32.bVar[1];
-		 USB.TX_Buffer[10] = V32.bVar[0];
+			 V32.sVar[0] = (short)SensList.intBMP180.mmHg;
+			 USB.TX_Buffer[9] =  V32.bVar[1];
+			 USB.TX_Buffer[10] = V32.bVar[0];
 
-		 V32.lVar = (long)(SensList.intBMP180.Temperature * 100.0);
-		 USB.TX_Buffer[11] = V32.bVar[3];
-		 USB.TX_Buffer[12] = V32.bVar[2];
-		 USB.TX_Buffer[13] = V32.bVar[1];
-		 USB.TX_Buffer[14] = V32.bVar[0];
-		 
-		 SensList.intBMP180.isDataUpdated = RESET;
-		 USB.TX_DataReadyFlag = SET;	
-		 return;
-	 }
+			 V32.lVar = (long)(SensList.intBMP180.Temperature * 100.0);
+			 USB.TX_Buffer[11] = V32.bVar[3];
+			 USB.TX_Buffer[12] = V32.bVar[2];
+			 USB.TX_Buffer[13] = V32.bVar[1];
+			 USB.TX_Buffer[14] = V32.bVar[0];
+			 
+			 SensList.intBMP180.isDataUpdated = RESET;
+			 xSemaphoreGive(xUSB_TX_Semaphore);
+			 return;
+	}
 
 	if (SensList.SensorsFound)
 	{
-		if (xSemaphoreTake (xUSB_TX_Semaphore, portMAX_DELAY) != pdTRUE) return;
-		USB.TX_Buffer[0] = SearchSensorsRoutine;
-		USB.TX_Buffer[1] = SensList.SensorsFound;
-		for (cnt = 0; cnt != 8; cnt++)
-			USB.TX_Buffer[cnt+2] = SensList.SearchedSensors[(SensList.SensorsFound - 1)][cnt];
-		SensList.SensorsFound--;
-		USB.TX_DataReadyFlag = SET;
-		return;
+			USB.TX_Buffer[0] = SearchSensorsRoutine;
+			USB.TX_Buffer[1] = SensList.SensorsFound;
+			for (cnt = 0; cnt != 8; cnt++)
+				USB.TX_Buffer[cnt+2] = SensList.SearchedSensors[(SensList.SensorsFound - 1)][cnt];
+			SensList.SensorsFound--;
+			xSemaphoreGive(xUSB_TX_Semaphore);
+			return;
 	}
 
 	if (SensList.SensorsIntalled)
 	{
-		if (xSemaphoreTake (xUSB_TX_Semaphore, portMAX_DELAY) != pdTRUE) return;
-		USB.TX_Buffer[0] = GET_INSTALLED_SENSORS;
-		USB.TX_Buffer[1] = SensList.SensorsIntalled;
-		for (cnt = 0; cnt != 8; cnt++)
-			USB.TX_Buffer[cnt+2] = SensList.SearchedSensors[(SensList.SensorsIntalled - 1)][cnt];
-		SensList.SensorsIntalled--;
-		USB.TX_DataReadyFlag = SET;
-		return;
+			USB.TX_Buffer[0] = GET_INSTALLED_SENSORS;
+			USB.TX_Buffer[1] = SensList.SensorsIntalled;
+			for (cnt = 0; cnt != 8; cnt++)
+				USB.TX_Buffer[cnt+2] = SensList.SearchedSensors[(SensList.SensorsIntalled - 1)][cnt];
+			SensList.SensorsIntalled--;
+			xSemaphoreGive(xUSB_TX_Semaphore);
+			return;
+	}
+}
+
+void USB_TX_DataHandler (void * pvArg)
+{
+	while(1)
+	{
+		vTaskDelay(250);
+		USB_TX_DataHelper();
 	}
 }
 
@@ -427,7 +436,6 @@ void ChangeSettingsTask (void * pvArg)
 void GetSettingsHandler (void)
 {
 	char i = 0;
-	if (xSemaphoreTake (xUSB_TX_Semaphore, portMAX_DELAY) != pdTRUE) return;
 	USB.TX_Buffer[i++] =  GetSettingsCommand;
 	
 	//1-4
@@ -480,7 +488,7 @@ void GetSettingsHandler (void)
 	USB.TX_Buffer[i++] =  V32.bVar[1];
 	USB.TX_Buffer[i++] =  V32.bVar[0];
 
-	USB.TX_DataReadyFlag = SET;	
+	xSemaphoreGive(xUSB_TX_Semaphore);
 }
 
 void SaveFileHandler (void)

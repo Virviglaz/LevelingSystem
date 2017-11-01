@@ -5,19 +5,17 @@
 
 typedef struct 
 {
-	char RX_ReadyFlag;
-	char TX_DataReadyFlag;
-	char TX_Buffer[USB_PACKET_LEN];
-	char * RX_Buffer;
-	char ZERO_Buffer[USB_PACKET_LEN];
-	char LastPackageZeroFlag;
+	BYTE TX_Buffer[USB_PACKET_LEN];
+	BYTE RX_Buffer[USB_PACKET_LEN];
+	BYTE ZERO_Buffer[USB_PACKET_LEN];
+	BYTE NOP_Buffer[USB_PACKET_LEN];
 }USBStructTypeDef;
 
 void GetReportToPC (void);
 void ReportFromPCHandle (void);
 void ZeroPacketInitTask (void * pvArg);
-void USB_RX_DataHandler (void);
-void USB_TX_DataHandler (void);
+void USB_RX_DataHandler (void * pvArg);
+void USB_TX_DataHandler (void * pvArg);
 void USB_SetTime (void);
 
 typedef union

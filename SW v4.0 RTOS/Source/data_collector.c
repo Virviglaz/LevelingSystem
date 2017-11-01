@@ -8,7 +8,6 @@
 #include "MPU6050.h"
 #include "BMP180.h"
 #include "SI7005.h"
-#include "stm32_GPIO.h"
 #include <math.h>
 #include "strings.h"
 #include "hid_comm.h"
@@ -53,7 +52,6 @@ extern RTC_CorrectorStructTypeDef RTC_C;
 const int BlinkFreqTablen[] = {1000, 500, 333, 250, 200, 167, 143, 125, 111, 100};
 const int BlinkFreqTable[] = {100, 111, 125, 143, 167, 200, 250, 333, 500, 1000};
 const char BFT_size = 9;
-typedef struct {GPIO_TypeDef * GPIOx;	u16 PINx;} PIN_TypeDef;
 SensorListStructTypeDef SensList;
 
 long AutoOffTimerInit (void)
@@ -87,7 +85,6 @@ void DataCollectorTask (void * pvArg)
 	if (!Error.BME280)
 		TaskError &= xTaskCreate(BME280_DataCollector, "Int Pressure", 100, NULL, tskIDLE_PRIORITY + 1, NULL);
 	
-	
 	if (!TaskError)
 		ErrorHandle(Task, "Task: Not created! Not enought memory.\r\n");
 
@@ -96,10 +93,11 @@ void DataCollectorTask (void * pvArg)
 	while(1)
 	{	
 		UartDataHandler();
-		USB_RX_DataHandler();
-		USB_TX_DataHandler();
+		//USB_RX_DataHandler();
+		//USB_TX_DataHandler();
 		ButtonHandle();
 		IWDG->KR = 0xAAAA; //reset watchdog timer
+		vTaskDelay(250);
 	}
 }
 
@@ -260,7 +258,7 @@ void SI7005_DataCollector (void * pvArg)
 		SI7005_Struct.MeasType = MeasTemp;
 		SI7005_StartConversion(&SI7005_Struct);
 	
-		vTaskDelay(35);		
+		vTaskDelay(500);		
 		
 		while (SI7005_DataReady(&SI7005_Struct));
 		SensList.intSI7005_Humdt.Err = SI7005_GetResult(&SI7005_Struct);
@@ -269,7 +267,7 @@ void SI7005_DataCollector (void * pvArg)
 		SI7005_Struct.MeasType = MeasHum;
 		SI7005_StartConversion(&SI7005_Struct);
 		
-		vTaskDelay(35);
+		vTaskDelay(500);
 		while (SI7005_DataReady(&SI7005_Struct));			
 		SensList.intSI7005_Humdt.Err = SI7005_GetResult(&SI7005_Struct);
 		

@@ -22,6 +22,7 @@
 #include "CRC.h"
 #include "BME280.h"
 #include "Leveling.h"
+#include "hid_comm.h"
 
 /* Variables */
 extern SW_I2C_DriverStructTypeDef I2C_Struct;
@@ -34,8 +35,10 @@ extern EEPROM_StructTypeDef EEPROM_Struct;
 extern ErrorTypeDef Error;
 extern char * ErrLogFile;
 extern char * DataLogFile;
-SemaphoreHandle_t xI2C_Semaphore;
+SemaphoreHandle_t xUSB_RX_Semaphore;
 SemaphoreHandle_t xUSB_TX_Semaphore;
+SemaphoreHandle_t xUSB_ZX_Semaphore;
+SemaphoreHandle_t xI2C_Semaphore;
 SemaphoreHandle_t xFLASH_Semaphore;
 
 /* Functions */
@@ -118,7 +121,7 @@ int GeneralInit (void)
 	//dbInit(CalcCRC32);
 	dbInit(crc32);
 	
-	TaskError &= xTaskCreate(InitTask, 			"Init Task",  1000, NULL, tskIDLE_PRIORITY + 1, NULL);
+	TaskError &= xTaskCreate(InitTask, 			"Init Task",  100, NULL, tskIDLE_PRIORITY + 1, NULL);
 	TaskError &= xTaskCreate(SD_ServiceTask, "SD Handler", 50, NULL, tskIDLE_PRIORITY + 1, &vSD_ServiceTaskHandler);
 	return TaskError ? 0 : 1;
 }
@@ -164,10 +167,12 @@ void InitHW (void)
 	PrintToFile(ErrLogFile, (char*)ResetText[ResetCause]);			
 	vTaskDelay(500);
 						
-	// Create semaphore
+	// Create semaphore and queues
 	xI2C_Semaphore = xSemaphoreCreateMutex();
-	xUSB_TX_Semaphore = xSemaphoreCreateMutex();
 	xFLASH_Semaphore = xSemaphoreCreateMutex();
+	xUSB_RX_Semaphore = xSemaphoreCreateMutex();
+	xUSB_TX_Semaphore = xSemaphoreCreateMutex();
+	xUSB_ZX_Semaphore = xSemaphoreCreateMutex();
 															
 	// Init I2C
 	I2C_Struct.Delay_func = I2C_DelayFunc;
@@ -249,9 +254,11 @@ void InitHW (void)
 		ErrorHandle(MPU6050, "MPU6050 does not answer!\r\n");
 	else if (Error.MPU6050)
 		ErrorHandle(MPU6050, "MPU6050 unknown error!\r\n");
-
 	
-	xTaskCreate(DataCollectorTask, "Data collector", 250, NULL, tskIDLE_PRIORITY + 1 , &vDataCollectorTaskHandler);
+	xTaskCreate(DataCollectorTask, "Data collector", 150, NULL, tskIDLE_PRIORITY + 1 , &vDataCollectorTaskHandler);
+	xTaskCreate(USB_RX_DataHandler, "USB RX", 150, NULL, tskIDLE_PRIORITY + 1, NULL);
+	xTaskCreate(USB_TX_DataHandler, "USB TX", 150, NULL, tskIDLE_PRIORITY + 1, NULL);
+
 	PrintToFile(ErrLogFile, "Initialisation passed successfully!\r\n");
 	
 	LevConfig.RelaysState = (char)BKP_ReadBackupRegister(RelayStateAddress);

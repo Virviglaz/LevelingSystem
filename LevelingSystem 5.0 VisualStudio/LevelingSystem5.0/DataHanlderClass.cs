@@ -49,12 +49,12 @@ namespace LevelingSystem5._0
                 return;
             }
 
-            if (SNum == 10)
+            if (SNum == 12)
             {
-                if (data[1] < 100)
+                if (data[4] < 100)
                 {
                     /* Procceed internal humidy sensors data */
-                    string Output = string.Format("INT humidity: {0:0}%", data[1]);
+                    string Output = string.Format("INT humidity: {0:0}%", data[4]);
                     if (MainWindow.isSensLogEnable)
                         PrintTextToOutput(MW.TextOutput, Output);
                     ChangeLabelText(MW.INT_Humidy, Output);

@@ -1,5 +1,11 @@
+#ifndef DATA_COLLECTOR_H
+#define DATA_COLLECTOR_H
+
+#include <stdio.h>
+#include <stdint.h>
 #include <stdbool.h>
 #include "HW.h"
+#include "stm32_GPIO.h"
 
 typedef struct
 {
@@ -22,6 +28,18 @@ typedef struct
 	/* Auto off timer in seconds */
 	long AutoOffTimerValueS;
 }PositionTypeDef;
+
+typedef struct 
+{
+	GPIO_TypeDef * GPIOx;
+	u16 PINx;
+}PIN_TypeDef;
+
+/*typedef struct
+{
+	PIN_TypeDef * D_Pins;
+	
+}LebBlinkTypeDef;*/
 
 typedef struct
 {
@@ -106,3 +124,5 @@ long AutoOffTimerInit (void);
 short ADC_Get_Result (char channel);
 void CallibrateZeroPositionHandle (void);
 void STM8_SendData (char * buf, char size);
+
+#endif

@@ -93,7 +93,7 @@ char PrintFloatDataToFile (char * filename, const char * Text, float Data, const
 	buf = pvPortMalloc(30 + 7 + strlen((char*)Text) + strlen((char*)units));
 	DateStamp = pvPortMalloc(30);
 	DateAndTimePrint(DateStamp);
-	sprintf(buf, "%s %s %.2f %s \r\n%c", DateStamp, Text, Data, units, 0);
+	sprintf(buf, "%s %s %.2f %s\n", DateStamp, Text, Data, units);
 	Result = LogToSD(filename, buf, strlen(buf), 0);
 	vPortFree(DateStamp);
 	vPortFree(buf);
@@ -108,7 +108,7 @@ char PrintIntDataToFile (char * filename, const char * Text, int Data, const cha
 	buf = pvPortMalloc(30 + 7 + strlen((char*)Text) + strlen((char*)units));
 	DateStamp = pvPortMalloc(30);
 	DateAndTimePrint(DateStamp);
-	sprintf(buf, "%s %s %i %s \r\n%c", DateStamp, Text, Data, units, 0);
+	sprintf(buf, "%s %s %i %s\n", DateStamp, Text, Data, units);
 	Result = LogToSD(filename, buf, strlen(buf), 0);
 	vPortFree(DateStamp);
 	vPortFree(buf);
@@ -123,7 +123,7 @@ char PrintFloatResultToFile (char * filename, const char * Text, char num, float
 	buf = pvPortMalloc(35 + 7 + strlen((char*)Text) + strlen((char*)units));
 	DateStamp = pvPortMalloc(30);
 	DateAndTimePrint(DateStamp);
-	sprintf(buf, "%s %s %d %.2f %s \r\n%c", DateStamp, Text, num, Data, units, 0);
+	sprintf(buf, "%s %s %d %.2f %s\n", DateStamp, Text, num, Data, units);
 	Result = LogToSD(filename, buf, strlen(buf), 0);
 	vPortFree(DateStamp);
 	vPortFree(buf);
@@ -138,7 +138,7 @@ char PrintIntResultToFile (char * filename, const char * Text, char num, int Dat
 	buf = pvPortMalloc(35 + 7 + strlen((char*)Text) + strlen((char*)units));
 	DateStamp = pvPortMalloc(30);
 	DateAndTimePrint(DateStamp);
-	sprintf(buf, "%s %s %d %i %s \r\n%c", DateStamp, Text, num, Data, units, 0);
+	sprintf(buf, "%s %s %d %i %s\n", DateStamp, Text, num, Data, units);
 	Result = LogToSD(filename, buf, strlen(buf), 0);
 	vPortFree(DateStamp);
 	vPortFree(buf);
@@ -149,23 +149,23 @@ void DateAndTimePrint (char * string)
 {
 	rtc_gettime(&DateAndTime);
 
-	sprintf(string, "%02d.%02d.%4d %02d:%02d:%02d %c", 
+	sprintf(string, "%02d.%02d.%4d %02d:%02d:%02d", 
 	DateAndTime.mday, 
 	DateAndTime.month, 
 	DateAndTime.year, 
 	DateAndTime.hour, 
 	DateAndTime.min, 
-	DateAndTime.sec, 0);
+	DateAndTime.sec);
 }
 
 void DatePrint (char * string)
 {
 	rtc_gettime(&DateAndTime);
 
-	sprintf(string, "%02d_%02d_%2d%c", 
+	sprintf(string, "%02d_%02d_%2d", 
 	DateAndTime.mday, 
 	DateAndTime.month, 
-	DateAndTime.year - 2000, 0);
+	DateAndTime.year - 2000);
 }
 
 char ReadFromSD (const char * filename, char * buf, unsigned int * ByteReaded)
@@ -196,10 +196,10 @@ char ReadFromSD (const char * filename, char * buf, unsigned int * ByteReaded)
 void LogToSD_Task (void * pvArg)
 {
 	char cnt;
-	const char Csign[] = {0xB0, 'C'};
+	const char Csign[] = {0xB0, 'C', 0};
 	const char HumU[] = {0x25};
 	float TempConvRes;
-	static char csv_out[10];
+	static char csv_out[20];
 	static char txtlogDate[15];
 	//char csvLogDate[15];
 	static char csvDateAndTime[20];
@@ -230,7 +230,7 @@ void LogToSD_Task (void * pvArg)
 				TempConvRes = (float)W16.Svar / 16;
 				PrintFloatResultToFile(txtlogDate, "Sensor", cnt, TempConvRes, Csign);	
 				
-				sprintf(csv_out, "%.2f,%s,%c", TempConvRes, Csign, 0);
+				sprintf(csv_out, "%.2f,%s,", TempConvRes, Csign);
 				LogToSD(CSVLogFile, csv_out, strlen(csv_out), 0);					
 				
 				SensList.OneWireSensors[cnt].isDataNotLogged = RESET;
@@ -264,29 +264,40 @@ void LogToSD_Task (void * pvArg)
 		}
 				
 		/* CSV print humidity */
-		sprintf(csv_out, "%d,%s,%c", SensList.OneWireSensors[SI7005_SensorNumberINT].Res[1], "%", 0);
-		LogToSD(CSVLogFile, csv_out, strlen(csv_out), 0);	
+		if (SensList.OneWireSensors[SI7005_SensorNumberINT].isDataNotLogged && SensList.OneWireSensors[SI7005_SensorNumberINT].Err == 0)
+		{
+			sprintf(csv_out, "%d,%c,", SensList.OneWireSensors[SI7005_SensorNumberINT].Res[1], '%');
+			LogToSD(CSVLogFile, csv_out, strlen(csv_out), 0);
+			SensList.OneWireSensors[SI7005_SensorNumberINT].isDataNotLogged = 0;
+		}
 		
-		if (SensList.OneWireSensors[Humidity_EXT1_Number].Res[1])
+		if (SensList.OneWireSensors[Humidity_EXT1_Number].isDataNotLogged && SensList.OneWireSensors[Humidity_EXT1_Number].Err == 0)
 		{
-			sprintf(csv_out, "%d,%s,%c", SensList.OneWireSensors[Humidity_EXT1_Number].Res[1], "%", 0);
+			sprintf(csv_out, "%d,%c,", SensList.OneWireSensors[Humidity_EXT1_Number].Res[1], '%');
 			LogToSD(CSVLogFile, csv_out, strlen(csv_out), 0);
+			SensList.OneWireSensors[Humidity_EXT1_Number].isDataNotLogged = 0;
 		}
 
-		if (SensList.OneWireSensors[Humidity_EXT2_Number].Res[1])
+		if (SensList.OneWireSensors[Humidity_EXT2_Number].isDataNotLogged && SensList.OneWireSensors[Humidity_EXT2_Number].Err == 0)
 		{
-			sprintf(csv_out, "%d,%s,%c", SensList.OneWireSensors[Humidity_EXT2_Number].Res[1], "%", 0);
+			sprintf(csv_out, "%d,%c,", SensList.OneWireSensors[Humidity_EXT2_Number].Res[1], '%');
 			LogToSD(CSVLogFile, csv_out, strlen(csv_out), 0);
+			SensList.OneWireSensors[Humidity_EXT2_Number].isDataNotLogged = 0;
 		}
 
-		/* CSV print mmHg */
-		sprintf(csv_out, "%d,%s,%c", SensList.intBMP180.mmHg, "mmHg", 0);
-		LogToSD(CSVLogFile, csv_out, strlen(csv_out), 0);			
+		
+		if (SensList.intBMP180.isDataNotLogged)
+		{
+			/* CSV print mmHg */
+			sprintf(csv_out, "%d,%s,", SensList.intBMP180.mmHg, "mmHg");
+			LogToSD(CSVLogFile, csv_out, strlen(csv_out), 0);			
 
-		/* CSV print internal temperature */
-		sprintf(csv_out, "%.2f,%s%c", SensList.intBMP180.Temperature, Csign, 0);
-		LogToSD(CSVLogFile, csv_out, strlen(csv_out), 0);		
+			/* CSV print internal temperature */
+			sprintf(csv_out, "%.2f,%s", SensList.intBMP180.Temperature, Csign);
+			LogToSD(CSVLogFile, csv_out, strlen(csv_out), 0);
+			SensList.intBMP180.isDataNotLogged = 0;
+		}			
 
-		LogToSD(CSVLogFile, "\r\n", 2, 0);
+		LogToSD(CSVLogFile, "\n", 2, 0);
 	}
 }
