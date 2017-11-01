@@ -202,7 +202,7 @@ void LogToSD_Task (void * pvArg)
 	static char csv_out[20];
 	static char txtlogDate[15];
 	//char csvLogDate[15];
-	static char csvDateAndTime[20];
+	static char csvDateAndTime[21];
 	union
 	{
 		short Svar;
@@ -218,8 +218,10 @@ void LogToSD_Task (void * pvArg)
 		//memcpy(csvLogDate + 8, ".CSV\0", 5);
 		
 		DateAndTimePrint(csvDateAndTime);
-		csvDateAndTime[strlen(csvDateAndTime) - 1] = ',';
+		//csvDateAndTime[strlen(csvDateAndTime) - 1] = ',';
 		csvDateAndTime[10] = ',';
+		csvDateAndTime[19] = ',';
+		csvDateAndTime[20] = 0;
 		LogToSD(CSVLogFile, csvDateAndTime, strlen(csvDateAndTime), 0);	
 		
 		for (cnt = 0; cnt != 10; cnt++)
@@ -228,7 +230,7 @@ void LogToSD_Task (void * pvArg)
 				W16.Bytes[0] = SensList.OneWireSensors[cnt].Res[1];
 				W16.Bytes[1] = SensList.OneWireSensors[cnt].Res[0];
 				TempConvRes = (float)W16.Svar / 16;
-				PrintFloatResultToFile(txtlogDate, "Sensor", cnt, TempConvRes, Csign);	
+				PrintFloatResultToFile(txtlogDate, "Sensor", cnt + 1, TempConvRes, Csign);	
 				
 				sprintf(csv_out, "%.2f,%s,", TempConvRes, Csign);
 				LogToSD(CSVLogFile, csv_out, strlen(csv_out), 0);					
@@ -298,6 +300,6 @@ void LogToSD_Task (void * pvArg)
 			SensList.intBMP180.isDataNotLogged = 0;
 		}			
 
-		LogToSD(CSVLogFile, "\n", 2, 0);
+		LogToSD(CSVLogFile, "\n", 1, 0);
 	}
 }
