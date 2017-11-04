@@ -9,7 +9,8 @@
 #include "EEPROM.h"
 #include "MPU6050.h"
 #include <string.h>
-#include "db.h"
+#include "simple_db.h"
+#include "CRC.h"
 
 /* Internal functions */
 char ValidateValue (float value, float low_lim, float hi_lim);
@@ -28,7 +29,7 @@ const char LevConfTagName[] = 			"LevConfig";
 const char PositionTagName[] = 			"Position";
 const char RTC_CorrectorTagName[] = "ClockCorr";
 const char LogConfigTagName[]			= "LogConfig";
-const char MPU6050_TagName[] = 			"Acc";
+const char MPU6050_TagName[] = 			"AccellZeroCal";
 
 /* Default values */
 const LevelingConfigStructTypeDef LevConfigDefault = {0.1, 0.25, 100, 100, 0, 3600, 0,0,0};
@@ -37,21 +38,29 @@ const LogConfStructTypeDef LogConfigDefault = {5, 5, 60};
 const RTC_CorrectorStructTypeDef RTC_C_Default = {0, 0, 0, 0};
 const int MaxDB_size = 300;
 
-DB_ErrorTypeDef StoreDB (LogSourceTypeDef Source)
+uint32_t CRC_Func(void * buf, uint32_t size)
 {
-	DB_ErrorTypeDef Result = Err_DB_Success;
+	return crc32(buf, size);
+}
+
+LocalDB_ErrorTypeDef StoreDB (LogSourceTypeDef Source)
+{
+	LocalDB_ErrorTypeDef Result = Err_DB_Success;
 	char * db;
 	int db_size = MaxDB_size;								
 	db = pvPortMalloc(db_size + 20);
 	if (db == NULL) return Err_OutOfMemory;
 	memset(db, 0, db_size);
-	Result = (DB_ErrorTypeDef) dbStoreData(LevConfTagName, (char*)&LevConfig, sizeof(LevConfig), db);								//24
-	Result |= (DB_ErrorTypeDef) dbStoreData(PositionTagName, (char*)&Position, sizeof(Position), db);								//44
-	Result |= (DB_ErrorTypeDef) dbStoreData(RTC_CorrectorTagName, (char*)&RTC_C, sizeof(RTC_C), db);								//16
-	Result |= (DB_ErrorTypeDef) dbStoreData(LogConfigTagName, (char*)&LogConfig, sizeof(LogConfig), db);						//8
-	Result |= (DB_ErrorTypeDef) dbStoreData(MPU6050_TagName, (char*)&MPU6050_ZeroCal, sizeof(MPU6050_ZeroCal), db);
 	
-  db_size = dbGetSize(db);
+	SimpleDB.Init(CRC_Func);
+	
+	Result = (LocalDB_ErrorTypeDef)  SimpleDB.Write(LevConfTagName, (char*)&LevConfig, sizeof(LevConfig), DB_8b, db);								//24
+	Result |= (LocalDB_ErrorTypeDef) SimpleDB.Write(PositionTagName, (char*)&Position, sizeof(Position), DB_8b, db);								//44
+	Result |= (LocalDB_ErrorTypeDef) SimpleDB.Write(RTC_CorrectorTagName, (char*)&RTC_C, sizeof(RTC_C), DB_8b, db);								//16
+	Result |= (LocalDB_ErrorTypeDef) SimpleDB.Write(LogConfigTagName, (char*)&LogConfig, sizeof(LogConfig), DB_8b, db);						//8
+	Result |= (LocalDB_ErrorTypeDef) SimpleDB.Write(MPU6050_TagName, (char*)&MPU6050_ZeroCal, sizeof(MPU6050_ZeroCal), DB_8b, db);
+	
+  db_size = SimpleDB.GetSize(db);
 	
 	if (!Result)
 	{		
@@ -72,20 +81,20 @@ DB_ErrorTypeDef StoreDB (LogSourceTypeDef Source)
 	return Result;
 }
 
-DB_ErrorTypeDef RestoreDB (LogSourceTypeDef Source)
+LocalDB_ErrorTypeDef RestoreDB (LogSourceTypeDef Source)
 {
-	static DB_ErrorTypeDef Result;
-	
+	LocalDB_ErrorTypeDef Result = Err_DB_Success;
 	char * db;
 	long db_size;
 	long BytesReaded;
 	
-	Result = Err_DB_Success;
+	SimpleDB.Init(CRC_Func);
 	
 	/* Allocate memory for db */
 	db_size = MaxDB_size;
 	db = pvPortMalloc(db_size);
 	if (db == NULL) return Err_OutOfMemory;
+	memset(db, 0, MaxDB_size);
 	
 	/* Fetch db */
 	if (Source == LogSourceEEPROM)
@@ -101,27 +110,24 @@ DB_ErrorTypeDef RestoreDB (LogSourceTypeDef Source)
 	{		
 		if (ReadFromSD(DB_FileName, db, (unsigned int*)&BytesReaded))
 			Result = Err_SDCard_ReadError;
-	}	
+	}
 	
-	if (!Result)
-	{
-		if (dbCheckCRC(db) == DB_Success)
-		{
-			Result = (DB_ErrorTypeDef)dbReadData(LevConfTagName, (char*)&LevConfig, &BytesReaded, db);		//24
-			Result |= (DB_ErrorTypeDef)dbReadData(PositionTagName, (char*)&Position, &BytesReaded, db);		//44
-			Result |= (DB_ErrorTypeDef)dbReadData(RTC_CorrectorTagName, (char*)&RTC_C, &BytesReaded, db);	//16	
-			Result |= (DB_ErrorTypeDef)dbReadData(LogConfigTagName, (char*)&LogConfig, &BytesReaded, db);	//8
-			Result |= (DB_ErrorTypeDef)dbReadData(MPU6050_TagName, (char*)&MPU6050_ZeroCal, &BytesReaded, db);
-			PrintIntDataToFile(ErrLogFile, "DB size: ", (int)dbGetSize(db), "bytes");
-			/*if (ValidateDB())
-			{
-				Result = Err_ValidationFailed;
-				PrintIntDataToFile(ErrLogFile, "DB Validation Error! ", Result, " ");
-				RollBackToDefaultValues();
-			}*/
-		}	
-		else
-			Result = Err_DB_WrongCRC;
+	if (Result == DB_Success)
+		if (SimpleDB.GetSize(db) == 0 || SimpleDB.GetSize(db) > MaxDB_size)
+			Result = Err_ValidationFailed;
+		
+	if (SimpleDB.Validate(db))
+			Result = Err_ValidationFailed;
+	
+	if (Result == DB_Success)
+	{		
+
+			Result = (LocalDB_ErrorTypeDef)SimpleDB.Read(LevConfTagName, (char*)&LevConfig, db);		//24
+			Result |= (LocalDB_ErrorTypeDef)SimpleDB.Read(PositionTagName, (char*)&Position, db);		//44
+			Result |= (LocalDB_ErrorTypeDef)SimpleDB.Read(RTC_CorrectorTagName, (char*)&RTC_C, db);	//16	
+			Result |= (LocalDB_ErrorTypeDef)SimpleDB.Read(LogConfigTagName, (char*)&LogConfig, db);	//8
+			Result |= (LocalDB_ErrorTypeDef)SimpleDB.Read(MPU6050_TagName, (char*)&MPU6050_ZeroCal, db);
+			PrintIntDataToFile(ErrLogFile, "DB size: ", (int)SimpleDB.GetSize(db), "bytes");
 	}	
 	else
 		PrintIntDataToFile(ErrLogFile, "DB Error: ", Result, " ");
@@ -145,32 +151,4 @@ void RollBackToDefaultValues (void)
 	memcpy(&Position, &PositionDefault, sizeof(PositionDefault));
 	memcpy(&LogConfig, &LogConfigDefault, sizeof(LogConfigDefault));
 	memcpy(&RTC_C, &RTC_C_Default, sizeof(RTC_C_Default));
-}
-
-char ValidateValue (float value, float low_lim, float hi_lim)
-{
-	if (value > hi_lim || value < low_lim) return 1;
-	return 0;
-}
-
-char ValidateDB (void)
-{
-	static char Result = 0;
-	Result |= ValidateValue(LevConfig.Kp, 0, 1);
-	Result |= ValidateValue(LevConfig.Kr, 0, 1);
-	Result |= ValidateValue(LevConfig.delay, 10, 1000);
-	Result |= ValidateValue(LevConfig.LedBrightness, 0, 100);
-	Result |= ValidateValue(LevConfig.PositionNum, 0, 16);
-	Result |= ValidateValue(LevConfig.AutoOffTimerS, 0, 1000000);
-	
-	Result |= ValidateValue(Position.D1_zero_t, 0, 1000);
-	Result |= ValidateValue(Position.D2_zero_t, 0, 1000);
-	Result |= ValidateValue(Position.D1_zero_def_p, 0, 1000);
-	Result |= ValidateValue(Position.D2_zero_def_p, 0, 1000);
-	Result |= ValidateValue(Position.D1_zero_def_r, 0, 1000);
-	Result |= ValidateValue(Position.D2_zero_def_r, 0, 1000);
-
-	Result |= ValidateValue(RTC_C.Result, -1000, +1000);
-
-	return Result;
 }

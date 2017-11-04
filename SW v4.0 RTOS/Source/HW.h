@@ -55,7 +55,6 @@
 #define FloatingModeButtonCNT	 50 
 
 /* I2C 24C64 EEPROM Configure */
-#define I2c_EEPROM_Address					0xA0			//default address 0xA0 for current board revision
 #define PageSizeBytes								32				//32 bytes default page size
 #define I2c_EEPROM_WriteTime_ms			50				//10ms minimum write time
 
@@ -101,6 +100,13 @@
 #define Humidity_EXT1_Number				10	
 #define Humidity_EXT2_Number				11
 #define SI7005_SensorNumberINT 			12
+
+#define MPU6050_I2C_AddressOnBoard	0xD0
+#define MPU6050_I2C_AddressExternal 0xD2
+#define BMP180_I2C_Address					0xEE
+#define BME280_I2C_Address					0xEC
+#define SI7005_I2C_Address					0x80
+#define I2c_EEPROM_Address					0xA0			//default address 0xA0 for current board revision
 
 #define BMP180_ReadIntervalSec			10
 

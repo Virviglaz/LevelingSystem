@@ -118,9 +118,6 @@ int GeneralInit (void)
 	Init_TIM3();
 	ADC_Configure(USB_VOLTAGE);
 	
-	//dbInit(CalcCRC32);
-	dbInit(crc32);
-	
 	TaskError &= xTaskCreate(InitTask, 			"Init Task",  100, NULL, tskIDLE_PRIORITY + 1, NULL);
 	TaskError &= xTaskCreate(SD_ServiceTask, "SD Handler", 50, NULL, tskIDLE_PRIORITY + 1, &vSD_ServiceTaskHandler);
 	return TaskError ? 0 : 1;
@@ -143,7 +140,6 @@ uint16_t I2C_SDA_IO_Read (void)
 
 void I2C_DelayFunc (uint16_t ms)
 {
-	//vTaskDelay(1);
 	delay(ms);
 }
 
@@ -176,7 +172,7 @@ void InitHW (void)
 															
 	// Init I2C
 	I2C_Struct.Delay_func = I2C_DelayFunc;
-	I2C_Struct.DelayValue = 50; //50 -> 130kHz clock
+	I2C_Struct.DelayValue = 100; //50 -> 100kHz clock
 	I2C_Struct.IO_SCL_Write = I2C_SCL_IO_Write;
 	I2C_Struct.IO_SDA_Write = I2C_SDA_IO_Write;
 	I2C_Struct.IO_SDA_Read = I2C_SDA_IO_Read;
@@ -187,7 +183,7 @@ void InitHW (void)
 	BMP180_Struct.ReadReg = I2C_ReadReg;
 	BMP180_Struct.WriteReg = I2C_WriteReg;
 	BMP180_Struct.P_Oversampling = BMP180_OversamplingX8;
-	BMP180_Struct.I2C_Adrs = 0xEE;
+	BMP180_Struct.I2C_Adrs = BMP180_I2C_Address;
 	Error.BMP180 = BMP180_Check_ID(&BMP180_Struct);
 	if (Error.BMP180 == I2C_ADD_NOT_EXIST)
 		ErrorHandle(BMP180, "BMP180 does not answer!\r\n");
@@ -197,16 +193,16 @@ void InitHW (void)
 	// Init BME280
 	BME280_Struct.ReadReg = I2C_ReadReg;
 	BME280_Struct.WriteReg = I2C_WriteReg;
-	BME280_Struct.I2C_Adrs = 0xEC;
-	BME280_Struct.HumidityOversampling = BME280_OversamplingX4;
-	BME280_Struct.TemperatureOversampling = BME280_OversamplingX4;
-	BME280_Struct.PressureOversampling = BME280_OversamplingX4;
+	BME280_Struct.I2C_Adrs = BME280_I2C_Address;
+	BME280_Struct.HumidityOversampling = BME280_OversamplingX16;
+	BME280_Struct.TemperatureOversampling = BME280_OversamplingX16;
+	BME280_Struct.PressureOversampling = BME280_OversamplingX16;
 	Error.BME280 = BME280_Init(&BME280_Struct);
 	
 	// Init humididy sensor
 	SI7005_Struct.ReadReg = I2C_ReadReg;
 	SI7005_Struct.WriteReg = I2C_WriteReg;
-	SI7005_Struct.I2C_Adrs = 0x80;
+	SI7005_Struct.I2C_Adrs = SI7005_I2C_Address;
 	SI7005_Struct.UseRelativeMeas = ENABLE;
 	Error.SI7005 = SI7005_CheckID(&SI7005_Struct);
 	if (Error.SI7005 == I2C_ADD_NOT_EXIST)

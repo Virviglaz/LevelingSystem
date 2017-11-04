@@ -269,8 +269,7 @@ void SI7005_DataCollector (void * pvArg)
 		
 		vTaskDelay(500);
 		while (SI7005_DataReady(&SI7005_Struct));			
-		SensList.intSI7005_Humdt.Err = SI7005_GetResult(&SI7005_Struct);
-		
+		SensList.intSI7005_Humdt.Err = SI7005_GetResult(&SI7005_Struct);		
 		SensList.intSI7005_Humdt.Humidity = SI7005_Struct.Humidity;
 		
 		/* Update flags */
@@ -299,8 +298,8 @@ void BMP180_DataCollector (void * pvArg)
 		SensList.intBMP180.Pressure = BMP180_Struct.Pressure;
 		SensList.intBMP180.Temperature = BMP180_Struct.Temperature;
 		SensList.intBMP180.Altitude = Altitude(BMP180_Struct.Pressure);
-		SensList.intBMP180.mmHg = Pa_To_Hg(BMP180_Struct.Pressure);
-
+		SensList.intBMP180.mmHg = Pa_To_Hg(BMP180_Struct.Pressure);		
+		
 		/* Update flags */
 		SensList.intBMP180.isDataNotLogged = 1;
 		SensList.intBMP180.isDataUpdated = 1;
@@ -323,7 +322,16 @@ void BME280_DataCollector (void * pvArg)
 			
 			/* Update flags */
 			SensList.intBMP180.isDataNotLogged = 1;
-			SensList.intBMP180.isDataUpdated = 1;			
+			SensList.intBMP180.isDataUpdated = 1;
+			
+			SensList.intSI7005_Humdt.isDataNotLogged = 1;
+			SensList.intSI7005_Humdt.isDataUpdated = 1;
+			
+			/* Back compatibility */
+			SensList.OneWireSensors[SI7005_SensorNumberINT].Err = 0;
+			SensList.OneWireSensors[SI7005_SensorNumberINT].Res[1] = BME280_Struct.Humidity;
+			SensList.OneWireSensors[SI7005_SensorNumberINT].isDataUpdated = SET;
+			SensList.OneWireSensors[SI7005_SensorNumberINT].isDataNotLogged = SET;			
 		}			
 	}
 }

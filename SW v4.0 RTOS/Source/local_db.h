@@ -19,9 +19,9 @@ typedef enum
 	Err_CRC_Mismatch = 				10,
 	Err_OutOfMemory = 				11,
 	Err_ValidationFailed = 		12
-}DB_ErrorTypeDef;
+}LocalDB_ErrorTypeDef;
 
-DB_ErrorTypeDef StoreDB (LogSourceTypeDef Source);
-DB_ErrorTypeDef RestoreDB (LogSourceTypeDef Source);
+LocalDB_ErrorTypeDef StoreDB (LogSourceTypeDef Source);
+LocalDB_ErrorTypeDef RestoreDB (LogSourceTypeDef Source);
 void UpdateDB (void);
 void RollBackToDefaultValues (void);

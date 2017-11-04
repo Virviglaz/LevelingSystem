@@ -32,7 +32,7 @@ uint8_t LevelingInit (void)
 	extern uint8_t I2C_ReadReg  (uint8_t I2C_Adrs, uint8_t Reg, uint8_t * buf, uint16_t size);
 	extern TaskHandle_t vLevelingTaskHandler;
 
-	uint8_t Result;
+	static uint8_t Result;
 	
 	MPU6050_Struct = pvPortMalloc(sizeof(* MPU6050_Struct));
 	
@@ -40,7 +40,7 @@ uint8_t LevelingInit (void)
 	MPU6050_Struct->delay_func = vTaskDelay;
 	MPU6050_Struct->ReadReg = I2C_ReadReg;
 	MPU6050_Struct->WriteReg = I2C_WriteReg;
-	MPU6050_Struct->I2C_Adrs = 0xD0;
+	MPU6050_Struct->I2C_Adrs = MPU6050_I2C_AddressOnBoard;
 	MPU6050_Struct->GyroScale = GYRO_0250d_s;
 	MPU6050_Struct->AccelScale = Scale_2g;
 	MPU6050_Struct->FilterOrder = 6;
@@ -48,6 +48,13 @@ uint8_t LevelingInit (void)
 	MPU6050_Struct->CheckRDY_pin = MPU6050_CheckReadyPin;
 	
 	Result = MPU6050_Init(MPU6050_Struct);
+	
+	/* Try search external acc */
+	if (Result)
+	{
+		MPU6050_Struct->I2C_Adrs = MPU6050_I2C_AddressExternal;
+		Result = MPU6050_Init(MPU6050_Struct);
+	}
 
 	if (Result)
 		vPortFree(MPU6050_Struct);
