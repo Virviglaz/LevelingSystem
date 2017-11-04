@@ -30,6 +30,7 @@ extern LevelingConfigStructTypeDef LevConfig;
 extern MPU6050_StructTypeDef MPU6050_Struct;
 extern BMP180_StructTypeDef BMP180_Struct;
 extern BME280_StructTypeDef BME280_Struct;
+extern BME280_CalibrationStructTypeDef BME280_Calibration;
 extern SI7005_StructTypeDef SI7005_Struct;
 extern EEPROM_StructTypeDef EEPROM_Struct;
 extern ErrorTypeDef Error;
@@ -197,6 +198,7 @@ void InitHW (void)
 	BME280_Struct.HumidityOversampling = BME280_OversamplingX16;
 	BME280_Struct.TemperatureOversampling = BME280_OversamplingX16;
 	BME280_Struct.PressureOversampling = BME280_OversamplingX16;
+	BME280_Struct.BME280_Calibration = &BME280_Calibration;
 	Error.BME280 = BME280_Init(&BME280_Struct);
 	
 	// Init humididy sensor

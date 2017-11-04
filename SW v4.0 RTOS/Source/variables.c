@@ -23,3 +23,4 @@ BMP180_StructTypeDef BMP180_Struct;
 SI7005_StructTypeDef SI7005_Struct;
 EEPROM_StructTypeDef EEPROM_Struct;
 BME280_StructTypeDef BME280_Struct;
+BME280_CalibrationStructTypeDef BME280_Calibration;

@@ -13,3 +13,6 @@
 *.log
 *.txt
 ../V15
+/LevelingSystem 5.0 VisualStudio/.vs/LevelingSystem5.0/v15/.suo
+/LevelingSystem 5.0 VisualStudio/.vs/LevelingSystem5.0/v15/Server/sqlite3/db.lock
+/LevelingSystem 5.0 VisualStudio/.vs/LevelingSystem5.0/v15/Server/sqlite3/storage.ide
