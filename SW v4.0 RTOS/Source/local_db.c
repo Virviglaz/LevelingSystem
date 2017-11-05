@@ -19,7 +19,7 @@ char ValidateDB (void);
 /* Extern variables */
 extern LevelingConfigStructTypeDef LevConfig;
 extern PositionTypeDef Position;
-extern EEPROM_StructTypeDef EEPROM_Struct;
+extern uint8_t EEPROM_ReadWrite (uint16_t Mem_adrs, void * buf, uint16_t size, uint8_t isWriting);
 extern MPU6050_ZeroCalTypeDef MPU6050_ZeroCal;
 extern RTC_CorrectorStructTypeDef RTC_C;
 extern LogConfStructTypeDef LogConfig;
@@ -64,74 +64,62 @@ LocalDB_ErrorTypeDef StoreDB (LogSourceTypeDef Source)
 	
 	if (!Result)
 	{		
-		if (Source == LogSourceEEPROM)
-		{
-			EEPROM_Struct.isWriting = 1;
-			EEPROM_Struct.buf = (uint8_t*)db;
-			EEPROM_Struct.Mem_adrs = 0;
-			EEPROM_Struct.size = db_size;
-			if (EEPROM_RW(&EEPROM_Struct)) 
-				Result = Err_EEPROM_WriteError;
-		}
+		if (Source == LogSourceEEPROM)		
+			Result = (LocalDB_ErrorTypeDef)EEPROM_ReadWrite(0, db, db_size, 1);		
 		else 	
-			if (LogToSD(DB_FileName, db, db_size, 1))
-				Result = Err_SDCard_WriteError;			
+			Result = (LocalDB_ErrorTypeDef)LogToSD(DB_FileName, db, db_size, 1);	
 	}
 	vPortFree(db);
 	return Result;
 }
 
+LocalDB_ErrorTypeDef GetDbFromSource (LogSourceTypeDef Source, void * db, uint32_t size)
+{
+	long BytesReaded;
+	if (Source == LogSourceEEPROM)
+	{	
+		PrintToFile(ErrLogFile, "Trying to get DB from EEPROM\n");
+		return (LocalDB_ErrorTypeDef)EEPROM_ReadWrite(0, db, size, 0);
+	}
+	PrintToFile(ErrLogFile, "Trying to get DB from SD CARD\n");
+	return (LocalDB_ErrorTypeDef)ReadFromSD(DB_FileName, db, (unsigned int*)&BytesReaded);
+}
+
 LocalDB_ErrorTypeDef RestoreDB (LogSourceTypeDef Source)
 {
-	LocalDB_ErrorTypeDef Result = Err_DB_Success;
+	LocalDB_ErrorTypeDef Result;
 	char * db;
 	long db_size;
-	long BytesReaded;
 	
 	SimpleDB.Init(CRC_Func);
 	
+	/* Try get only size data from db */
+	db = pvPortMalloc(8);
+	Result = GetDbFromSource(Source, db, 8);
+	db_size = SimpleDB.GetSize(db) + 10;
+	vPortFree(db);
+	
+	if (Result) return Result;
+	PrintIntDataToFile(ErrLogFile, "DB found! Size: ", (int)db_size, "bytes");
+	
 	/* Allocate memory for db */
-	db_size = MaxDB_size;
 	db = pvPortMalloc(db_size);
 	if (db == NULL) return Err_OutOfMemory;
-	memset(db, 0, MaxDB_size);
 	
 	/* Fetch db */
-	if (Source == LogSourceEEPROM)
-	{	
-		EEPROM_Struct.isWriting = 0;
-		EEPROM_Struct.buf = (uint8_t*)db;
-		EEPROM_Struct.Mem_adrs = 0;
-		EEPROM_Struct.size = db_size;
-		if (EEPROM_RW(&EEPROM_Struct))
-			Result = Err_EEPROM_ReadError;
-	}
-	else
-	{		
-		if (ReadFromSD(DB_FileName, db, (unsigned int*)&BytesReaded))
-			Result = Err_SDCard_ReadError;
-	}
+	Result = GetDbFromSource(Source, db, db_size);
 	
 	if (Result == DB_Success)
-		if (SimpleDB.GetSize(db) == 0 || SimpleDB.GetSize(db) > MaxDB_size)
-			Result = Err_ValidationFailed;
-		
-	if (SimpleDB.Validate(db))
-			Result = Err_ValidationFailed;
-	
-	if (Result == DB_Success)
-	{		
-
-			Result = (LocalDB_ErrorTypeDef)SimpleDB.Read(LevConfTagName, (char*)&LevConfig, db);		//24
-			Result |= (LocalDB_ErrorTypeDef)SimpleDB.Read(PositionTagName, (char*)&Position, db);		//44
-			Result |= (LocalDB_ErrorTypeDef)SimpleDB.Read(RTC_CorrectorTagName, (char*)&RTC_C, db);	//16	
-			Result |= (LocalDB_ErrorTypeDef)SimpleDB.Read(LogConfigTagName, (char*)&LogConfig, db);	//8
-			Result |= (LocalDB_ErrorTypeDef)SimpleDB.Read(MPU6050_TagName, (char*)&MPU6050_ZeroCal, db);
-			PrintIntDataToFile(ErrLogFile, "DB size: ", (int)SimpleDB.GetSize(db), "bytes");
-	}	
-	else
-		PrintIntDataToFile(ErrLogFile, "DB Error: ", Result, " ");
-	
+	{
+		if (SimpleDB.GetSize(db) > 0 && SimpleDB.GetSize(db) < MaxDB_size)
+		{				
+				Result = (LocalDB_ErrorTypeDef)SimpleDB.Read(LevConfTagName, (char*)&LevConfig, db);		//24
+				Result |= (LocalDB_ErrorTypeDef)SimpleDB.Read(PositionTagName, (char*)&Position, db);		//44
+				Result |= (LocalDB_ErrorTypeDef)SimpleDB.Read(RTC_CorrectorTagName, (char*)&RTC_C, db);	//16	
+				Result |= (LocalDB_ErrorTypeDef)SimpleDB.Read(LogConfigTagName, (char*)&LogConfig, db);	//8
+				Result |= (LocalDB_ErrorTypeDef)SimpleDB.Read(MPU6050_TagName, (char*)&MPU6050_ZeroCal, db);
+		}
+	}
 	vPortFree(db);
 	return Result;
 }

@@ -188,8 +188,7 @@ void UartDataHandler (void)
 	Uart.DataReady = 0;
 	if (Uart.Buffer[0] == (char)CONV_RESULT && Uart.Buffer[1] < MaxSensors)
 	{
-		char SensNum;
-		SensNum = Uart.Buffer[1];
+		char SensNum = Uart.Buffer[1];
 		SensList.OneWireSensors[SensNum].Err = Uart.Buffer[2];			//error code
 		SensList.OneWireSensors[SensNum].Res[0] = Uart.Buffer[3];	//H data
 		SensList.OneWireSensors[SensNum].Res[1] = Uart.Buffer[4];	//L data

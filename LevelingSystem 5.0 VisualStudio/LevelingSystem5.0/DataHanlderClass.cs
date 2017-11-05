@@ -49,6 +49,23 @@ namespace LevelingSystem5._0
                 return;
             }
 
+            if (SNum == 10 || SNum == 11)
+            {
+                if (data[4] < 100)
+                {
+                    /* Procceed internal humidy sensors data */
+                    string Output = string.Format("EXT{0} humidity: {1}%", SNum - 9,data[4]);
+                    if (MainWindow.isSensLogEnable)
+                        PrintTextToOutput(MW.TextOutput, Output);
+                    ChangeLabelText(MW.INT_Humidy, Output);
+                    Output = "";
+                }
+                else
+                    /* Error print out */
+                    PrintTextToOutput(MW.TextOutput, "External humidity sensor error\r\nData out of range!");
+                return;
+            }
+
             if (SNum == 12)
             {
                 if (data[4] < 100)

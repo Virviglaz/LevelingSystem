@@ -56,6 +56,7 @@ extern LogConfStructTypeDef LogConfig;
 V32_TypeDef V32;
 char FileName[15];
 FIL FileObject;       /* File object */
+char * USB_TX_TextBuffer = 0;
 
 /* Tasks */
 void ChangeSettingsTask (void * pvArg);
@@ -198,6 +199,16 @@ void USB_RX_DataHandler (void * pvArg)
 void USB_TX_DataHelper (void)
 {
 	char cnt;
+	/*static uint32_t buf_cnt = 0; //not implemented yet
+	if (USB_TX_TextBuffer)
+	{
+		USB.TX_Buffer[0] = SendTextOverUSB_Command;
+		while(USB_TX_TextBuffer[buf_cnt] && )
+			
+	}
+	else
+		buf_cnt = 0;*/
+	
 	for (cnt = 0; cnt != MaxSensors; cnt++)
 		if (SensList.OneWireSensors[cnt].isDataUpdated)
 		{
@@ -493,8 +504,6 @@ void GetSettingsHandler (void)
 
 void SaveFileHandler (void)
 {
-	//if (xTaskCreate(SaveFileTask, NULL, 300, NULL, tskIDLE_PRIORITY + 5 , NULL) != pdPASS)
-		//PrintToFile("ERRLOG.TXT", "SaveFileTask not created!\r\n");
 	SaveFileTask(NULL);
 }
 

@@ -48,6 +48,7 @@
 #define SaveFileDefineName								0x84
 #define PERFORM_SW_RESET									0x85
 #define SaveFileFinishedCommand						0x86
+#define SendTextOverUSB_Command						0x87
 
 /* Subgroup for Version 4.0 RTOS */
 #define sAutoOffTimerValueS								0x00

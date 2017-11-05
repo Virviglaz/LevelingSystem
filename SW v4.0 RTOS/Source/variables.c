@@ -20,7 +20,7 @@ RTC_CorrectorStructTypeDef RTC_C = {0,0,0,0};
 
 SW_I2C_DriverStructTypeDef I2C_Struct;
 BMP180_StructTypeDef BMP180_Struct;
+BMP180_CalibrationStructTypeDef BMP180_Calibration;
 SI7005_StructTypeDef SI7005_Struct;
-EEPROM_StructTypeDef EEPROM_Struct;
 BME280_StructTypeDef BME280_Struct;
 BME280_CalibrationStructTypeDef BME280_Calibration;

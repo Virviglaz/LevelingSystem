@@ -29,10 +29,10 @@ extern SW_I2C_DriverStructTypeDef I2C_Struct;
 extern LevelingConfigStructTypeDef LevConfig;
 extern MPU6050_StructTypeDef MPU6050_Struct;
 extern BMP180_StructTypeDef BMP180_Struct;
+extern BMP180_CalibrationStructTypeDef BMP180_Calibration;
 extern BME280_StructTypeDef BME280_Struct;
 extern BME280_CalibrationStructTypeDef BME280_Calibration;
 extern SI7005_StructTypeDef SI7005_Struct;
-extern EEPROM_StructTypeDef EEPROM_Struct;
 extern ErrorTypeDef Error;
 extern char * ErrLogFile;
 extern char * DataLogFile;
@@ -185,11 +185,8 @@ void InitHW (void)
 	BMP180_Struct.WriteReg = I2C_WriteReg;
 	BMP180_Struct.P_Oversampling = BMP180_OversamplingX8;
 	BMP180_Struct.I2C_Adrs = BMP180_I2C_Address;
+	BMP180_Struct.BMP180_Calibration = &BMP180_Calibration;
 	Error.BMP180 = BMP180_Check_ID(&BMP180_Struct);
-	if (Error.BMP180 == I2C_ADD_NOT_EXIST)
-		ErrorHandle(BMP180, "BMP180 does not answer!\r\n");
-	else if (Error.BMP180)
-		ErrorHandle(BMP180, "BMP180 unknown error!\r\n");	
 	
 	// Init BME280
 	BME280_Struct.ReadReg = I2C_ReadReg;
@@ -213,13 +210,13 @@ void InitHW (void)
 		ErrorHandle(SI7005, "SI7005 unknown error!\r\n");	
 
 	// EEPROM init
-	EEPROM_Struct.I2C_Adrs = I2c_EEPROM_Address;
+	/*EEPROM_Struct.I2C_Adrs = I2c_EEPROM_Address;
 	EEPROM_Struct.delay_func = vTaskDelay;	
 	EEPROM_Struct.ReadPage = I2C_ReadPage;
 	EEPROM_Struct.WritePage = I2C_WritePage;
 	EEPROM_Struct.PageSize = PageSizeBytes;
 	EEPROM_Struct.PageWriteTime = I2c_EEPROM_WriteTime_ms;
-	EEPROM_Struct.Mem_adrs = 0;
+	EEPROM_Struct.Mem_adrs = 0;*/
 
 	/* DB restore */
 #ifdef DEBUG
@@ -539,4 +536,26 @@ void Init_SPI2 (void)
 
 	SPI_Cmd(SPI2, ENABLE);
 }
+
+uint8_t EEPROM_ReadWrite (uint16_t Mem_adrs, void * buf, uint16_t size, uint8_t isWriting)
+{
+	uint8_t Result;
+	EEPROM_StructTypeDef * EEPROM;
+	EEPROM = pvPortMalloc(sizeof(*EEPROM));
+	EEPROM->buf = buf;
+	EEPROM->delay_func = vTaskDelay;
+	EEPROM->I2C_Adrs = I2c_EEPROM_Address;
+	EEPROM->isWriting = isWriting;
+	EEPROM->Mem_adrs = Mem_adrs;
+	EEPROM->PageSize = PageSizeBytes;
+	EEPROM->PageWriteTime = I2c_EEPROM_WriteTime_ms;
+	EEPROM->size = size;
+	EEPROM->ReadPage = I2C_ReadPage;
+	EEPROM->WritePage = I2C_WritePage;
+	
+	Result = EEPROM_RW(EEPROM);
+	vPortFree(EEPROM);
+	return Result;
+}
+
 
