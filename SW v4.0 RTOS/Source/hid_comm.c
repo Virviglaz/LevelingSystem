@@ -3,6 +3,7 @@
 #include "FreeRTOS.h"
 #include "task.h"
 #include "semphr.h"
+#include "queue.h"
 #include "rtc.h"
 #include "data_collector.h"
 #include "error_collector.h"
@@ -56,7 +57,7 @@ extern LogConfStructTypeDef LogConfig;
 V32_TypeDef V32;
 char FileName[15];
 FIL FileObject;       /* File object */
-char * USB_TX_TextBuffer = 0;
+QueueHandle_t xUSB_TX_TextQueue;
 
 /* Tasks */
 void ChangeSettingsTask (void * pvArg);
@@ -198,16 +199,16 @@ void USB_RX_DataHandler (void * pvArg)
 
 void USB_TX_DataHelper (void)
 {
-	char cnt;
-	/*static uint32_t buf_cnt = 0; //not implemented yet
-	if (USB_TX_TextBuffer)
+	char cnt, * buf;
+
+	if (xQueueReceive(xUSB_TX_TextQueue, &buf, 0) == pdTRUE)
 	{
 		USB.TX_Buffer[0] = SendTextOverUSB_Command;
-		while(USB_TX_TextBuffer[buf_cnt] && )
-			
+		strcpy((char*)USB.TX_Buffer + 1, buf);
+		vPortFree(buf);
+		xSemaphoreGive(xUSB_TX_Semaphore);
+		return;
 	}
-	else
-		buf_cnt = 0;*/
 	
 	for (cnt = 0; cnt != MaxSensors; cnt++)
 		if (SensList.OneWireSensors[cnt].isDataUpdated)
@@ -295,6 +296,7 @@ void USB_SetTime (void)
 	DateAndTime.mday = 	USB.RX_Buffer[6];
 	DateAndTime.wday = 	USB.RX_Buffer[7];
 	rtc_settime(&DateAndTime);
+	PRINT("Time updated: %u:%u:%u", DateAndTime.hour, DateAndTime.min, DateAndTime.sec);
 }
 
 void InstallNewSensorHandle (void)

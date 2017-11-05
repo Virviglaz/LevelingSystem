@@ -23,6 +23,7 @@ namespace LevelingSystem5._0
             SearchSensorsHandling(data, MW);
             InstalledSensorsHandling(data, MW);
             GetSettingCommandHandler(data, MW);
+            PrintTextOverUSB(data, MW);
         }
 
         static private void TemperatureSensorHandling (byte[] data, MainWindow MW)
@@ -242,6 +243,18 @@ namespace LevelingSystem5._0
             PrintTextToOutput(MW.TextOutput, Text);
             foreach (string Sensor in MainWindow.SensorsFoundList)
                 PrintTextToOutput(MW.TextOutput, string.Format("{0:0}: ", cnt++) + Sensor);
+        }
+
+        static private void PrintTextOverUSB(byte[] data, MainWindow MW)
+        {
+            if (data[1] != Const.SendTextOverUSB_Command) return;
+            string text = "";
+            for (byte i = 0; i < 60; i++)
+            {
+                if (data[2 + i] == 0 || data[2 + i] == '\n') break;
+                text += (char)data[2 + i];
+            }
+            PrintTextToOutput(MW.TextOutput, text);
         }
 
         #region Data Convert helpers

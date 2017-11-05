@@ -48,6 +48,7 @@ namespace LevelingSystem5._0
         public const byte SaveFileDefineName = 0x84;
         public const byte Perform_SW_Reset = 0x85;
         public const byte FileFinishCommand = 0x86;
+        public const byte SendTextOverUSB_Command = 0x87;
 
         public const byte sAutoOffTimerValueS = 0x00;
         public const byte sPositionNum = 0x01;

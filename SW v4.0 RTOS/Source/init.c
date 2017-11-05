@@ -6,6 +6,7 @@
 #include "FreeRTOS.h"
 #include "task.h"
 #include "semphr.h"
+#include "queue.h"
 #include "rtc.h"
 #include "stm32_GPIO.h"
 #include "HW.h"
@@ -23,6 +24,8 @@
 #include "BME280.h"
 #include "Leveling.h"
 #include "hid_comm.h"
+#include <stdio.h>
+#include <string.h>
 
 /* Variables */
 extern SW_I2C_DriverStructTypeDef I2C_Struct;
@@ -36,11 +39,15 @@ extern SI7005_StructTypeDef SI7005_Struct;
 extern ErrorTypeDef Error;
 extern char * ErrLogFile;
 extern char * DataLogFile;
+extern QueueHandle_t xUSB_TX_TextQueue;
 SemaphoreHandle_t xUSB_RX_Semaphore;
 SemaphoreHandle_t xUSB_TX_Semaphore;
 SemaphoreHandle_t xUSB_ZX_Semaphore;
 SemaphoreHandle_t xI2C_Semaphore;
 SemaphoreHandle_t xFLASH_Semaphore;
+struct __FILE { int handle; };
+FILE __stdout;
+FILE __stdin;
 
 /* Functions */
 void InitHW (void);
@@ -170,6 +177,7 @@ void InitHW (void)
 	xUSB_RX_Semaphore = xSemaphoreCreateMutex();
 	xUSB_TX_Semaphore = xSemaphoreCreateMutex();
 	xUSB_ZX_Semaphore = xSemaphoreCreateMutex();
+	xUSB_TX_TextQueue = xQueueCreate(10, sizeof(char*));
 															
 	// Init I2C
 	I2C_Struct.Delay_func = I2C_DelayFunc;
@@ -208,15 +216,6 @@ void InitHW (void)
 		ErrorHandle(SI7005, "SI7005 does not answer!\r\n");
 	else if (Error.SI7005)
 		ErrorHandle(SI7005, "SI7005 unknown error!\r\n");	
-
-	// EEPROM init
-	/*EEPROM_Struct.I2C_Adrs = I2c_EEPROM_Address;
-	EEPROM_Struct.delay_func = vTaskDelay;	
-	EEPROM_Struct.ReadPage = I2C_ReadPage;
-	EEPROM_Struct.WritePage = I2C_WritePage;
-	EEPROM_Struct.PageSize = PageSizeBytes;
-	EEPROM_Struct.PageWriteTime = I2c_EEPROM_WriteTime_ms;
-	EEPROM_Struct.Mem_adrs = 0;*/
 
 	/* DB restore */
 #ifdef DEBUG
@@ -558,4 +557,23 @@ uint8_t EEPROM_ReadWrite (uint16_t Mem_adrs, void * buf, uint16_t size, uint8_t 
 	return Result;
 }
 
-
+int fputc(int ch, FILE *f)
+{
+	static char text[60], i = 0;
+	
+	text[i++] = ch;
+	if (i == sizeof(text) || ch == 0 || ch == '\n')
+	{
+		char * buf = pvPortMalloc(i + 2);
+		memcpy(buf, text, i++);
+		text[i] = 0; //null terminate
+		i = 0;
+		
+		if (uxQueueSpacesAvailable(xUSB_TX_TextQueue))
+			xQueueSend(xUSB_TX_TextQueue, &buf, NULL);
+		else
+			vPortFree(buf);
+	}
+	
+  return(ch);
+}

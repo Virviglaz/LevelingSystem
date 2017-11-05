@@ -3,6 +3,21 @@
 #include "type.h"
 #include "usbcfg.h"
 
+#ifndef PRINT
+	#define PRINT(fmt, ...) \
+							do { printf(fmt, ##__VA_ARGS__); printf("\n"); } while (0)
+#endif
+
+#ifndef	DEBUG					
+	#define DEBUG(fmt, ...) \
+							do if (MainConfig.Debug) \
+							{ \
+								printf("%s:%d:%s(): ", __FILE__, __LINE__, __func__); \
+								printf(fmt, ##__VA_ARGS__); \
+								printf("\n"); \
+							}while (0)					
+#endif
+
 typedef struct 
 {
 	BYTE TX_Buffer[USB_PACKET_LEN];

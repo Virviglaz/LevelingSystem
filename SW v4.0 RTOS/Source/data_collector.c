@@ -16,6 +16,7 @@
 #include "BME280.h"
 #include "Leveling.h"
 #include "Positions.h"
+#include <stdio.h>
 
 /* Functions */
 void UartDataHandler (void);
@@ -93,8 +94,6 @@ void DataCollectorTask (void * pvArg)
 	while(1)
 	{	
 		UartDataHandler();
-		//USB_RX_DataHandler();
-		//USB_TX_DataHandler();
 		ButtonHandle();
 		IWDG->KR = 0xAAAA; //reset watchdog timer
 		vTaskDelay(250);
