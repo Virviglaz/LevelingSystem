@@ -83,8 +83,10 @@ void Init (void)
   
   BME280_Error = BME280_TryInit();
   SI7005_Error = SI7005_TryInit();
+  if (BME280_Error == I2C_SUCCESS)
+    BME280_Init(&BME280_Struct);
 
-  GPIO_ReadInputPin(JP1) ? memcpy(OW.SN, EXT1_SN, 7) : memcpy(OW.SN, EXT1_SN, 7);
+  GPIO_ReadInputPin(JP1) ? memcpy(OW.SN, EXT1_SN, 7) : memcpy(OW.SN, EXT2_SN, 7);
   OW.SN[7] = Crc8Dallas(7, OW.SN); 
   OW.Mode = OW_RESET;
   
@@ -96,6 +98,7 @@ void Init (void)
      {
        GPIO_WriteHigh(LED);
        
+       /* Try get data from SI7005 */
        if (SI7005_Error == I2C_SUCCESS)
        {
          SI7005.MeasType = MeasHum;
@@ -111,6 +114,14 @@ void Init (void)
          SI7005_Error = (I2C_Result)SI7005_GetResult(&SI7005);        
          Temperature = (uint16_t)SI7005.Temperature;
          delay_ms(10);
+       }
+       
+       /* Try get data from BME280 */
+       if (BME280_Error == I2C_SUCCESS)
+       {
+         BME280_Get_Result(&BME280_Struct);
+         Humidity = (uint16_t)BME280_Struct.Humidity;
+         Temperature = (uint16_t)BME280_Struct.Temperature;
        }
        
        PrepareData(Humidity, Temperature);

@@ -57,7 +57,10 @@ namespace LevelingSystem5._0
                     string Output = string.Format("EXT{0} humidity: {1}%", SNum - 9,data[4]);
                     if (MainWindow.isSensLogEnable)
                         PrintTextToOutput(MW.TextOutput, Output);
-                    ChangeLabelText(MW.INT_Humidy, Output);
+                    if (SNum == 10)
+                        ChangeLabelText(MW.EXT_Humidity0, Output);
+                    else
+                        ChangeLabelText(MW.EXT_Humidity1, Output);
                     Output = "";
                 }
                 else
