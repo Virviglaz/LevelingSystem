@@ -296,7 +296,7 @@ void USB_SetTime (void)
 	DateAndTime.mday = 	USB.RX_Buffer[6];
 	DateAndTime.wday = 	USB.RX_Buffer[7];
 	rtc_settime(&DateAndTime);
-	PRINT("Time updated: %u:%u:%u", DateAndTime.hour, DateAndTime.min, DateAndTime.sec);
+	//PRINT("Time updated: %u:%u:%u", DateAndTime.hour, DateAndTime.min, DateAndTime.sec);
 }
 
 void InstallNewSensorHandle (void)

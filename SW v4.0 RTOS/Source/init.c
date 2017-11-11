@@ -218,20 +218,20 @@ void InitHW (void)
 		ErrorHandle(SI7005, "SI7005 unknown error!\r\n");	
 
 	/* DB restore */
-#ifdef DEBUG
+/*#ifdef DEBUG
 	if (RCC->CSR & RCC_CSR_IWDGRSTF)	
 		UpdateDB();		
 	else
-#endif
+#endif*/
 	{
-		/* First try fetch from EEPROM */
-		Error.DB = PrintDB_Error((char)RestoreDB(LogSourceEEPROM));
+		/* First try fetch from SD CARD */
+		Error.DB = PrintDB_Error((char)RestoreDB(LogSourceSDcard));
 		
 		/* If failed, fetch from SD card */
 		if (Error.DB)
 		{
-			PrintIntDataToFile(ErrLogFile, "Error fetching DB from EEPROM.  Error num:", (int) Error.DB, " ");
-			Error.DB = PrintDB_Error((char)RestoreDB(LogSourceSDcard));
+			PrintIntDataToFile(ErrLogFile, "Error fetching DB from SD Card.  Error num:", (int) Error.DB, " ");
+			Error.DB = PrintDB_Error((char)RestoreDB(LogSourceEEPROM));
 		}
 		
 		/* if no db found create default one */

@@ -123,10 +123,12 @@ void LevelingTask (void * pvArg)
 
 void CallibrateZeroPositionHandle (void)
 {
+	extern ErrorTypeDef Error;
 	extern char * ErrLogFile;
 	char * buf;
 	
 	if (MPU6050_Struct == 0) return;
+	if (Error.MPU6050) return;
 	
 	MPU6050_CalibrateZero(MPU6050_Struct);
 	UpdateDB();

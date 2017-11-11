@@ -89,6 +89,7 @@ void Init (void)
   GPIO_ReadInputPin(JP1) ? memcpy(OW.SN, EXT1_SN, 7) : memcpy(OW.SN, EXT2_SN, 7);
   OW.SN[7] = Crc8Dallas(7, OW.SN); 
   OW.Mode = OW_RESET;
+  OW.StartConvFlag = SET;
   
   rim();
   
