@@ -116,6 +116,7 @@ int GeneralInit (void)
 	PIN_OUT_OD(RMOSI);
 	PIN_OUT_OD(RCS);
 	PIN_IN_PU(BTN);
+	PIN_IN_PU(BTNv2);
 	PIN_ON(SW_5V);
 	
 	rtc_init();

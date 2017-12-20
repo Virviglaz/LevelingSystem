@@ -400,18 +400,23 @@ void STM8_SendData (char * buf, char size)
 	}
 }
 
+uint16_t BTN_Read (void)
+{
+	return PIN_SYG(BTN) && PIN_SYG(BTNv2);
+}
+
 void ButtonHandle (void)
 {
 	extern void EnableFloatMode (char FloatState);
 	static char PrevState = SET;
-	if (PIN_SYG(BTN) && !PrevState)
+	if (BTN_Read() && !PrevState)
 	{
 		//released
 		PrevState = SET;
 		EnableFloatMode(DISABLE);
 		ChangeLevelingState(DISABLE);
 	}
-	if (!PIN_SYG(BTN) && PrevState)
+	if (!BTN_Read() && PrevState)
 	{
 		//pressed
 		PrevState = RESET;

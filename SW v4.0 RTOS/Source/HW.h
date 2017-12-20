@@ -41,13 +41,8 @@
 
 #define USB_ON									GPIOC, GPIO_Pin_9
 
-#ifdef VER321
-	#define BTN										GPIOC, GPIO_Pin_13
-	//for TOP PCB since 3.2, PC13 traced
-#else
-	#define BTN										GPIOC, GPIO_Pin_8
-	//Pin.2 left unconnected, PC8 used in that case
-#endif
+#define BTN											GPIOC, GPIO_Pin_13
+#define BTNv2										GPIOC, GPIO_Pin_8
 
 /* Version 2.0 Altium */
 #define SW_5V										GPIOB, GPIO_Pin_12
