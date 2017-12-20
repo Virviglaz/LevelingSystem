@@ -59,6 +59,8 @@ uint8_t I2C_ReadReg  (uint8_t I2C_Adrs, uint8_t Reg, uint8_t * buf, uint16_t siz
 uint8_t I2C_WritePage (uint8_t I2C_Adrs, uint8_t * MemPos, uint8_t MemPosSize, uint8_t * buf, uint16_t size);
 uint8_t I2C_ReadPage  (uint8_t I2C_Adrs, uint8_t * MemPos, uint8_t MemPosSize, uint8_t * buf, uint16_t size);
 uint16_t MPU6050_CheckReadyPin (void);
+uint8_t HTU21D_Write (uint8_t reg, uint8_t * buf, uint8_t size);
+uint8_t HTU21D_Read (uint8_t reg, uint8_t * buf, uint8_t size);
 void delay (unsigned int cycles);
 void Get_SerialNum(void);
 void Init_TIM4 (void);
@@ -114,6 +116,7 @@ int GeneralInit (void)
 	PIN_OUT_OD(RMOSI);
 	PIN_OUT_OD(RCS);
 	PIN_IN_PU(BTN);
+	PIN_ON(SW_5V);
 	
 	rtc_init();
 	Init_SPI1();
@@ -399,7 +402,6 @@ uint8_t I2C_WritePage (uint8_t I2C_Adrs, uint8_t * MemPos, uint8_t MemPosSize, u
 	{
 		Error.I2C++;
 		SW_I2C_RESET_BUS();
-		//I2C_ResetBus();
 	}
 	xSemaphoreGive (xI2C_Semaphore);
 	return Result;
@@ -414,10 +416,27 @@ uint8_t I2C_ReadPage (uint8_t I2C_Adrs, uint8_t * MemPos, uint8_t MemPosSize, ui
 	{
 		Error.I2C++;
 		SW_I2C_RESET_BUS();
-		//I2C_ResetBus();
 	}
 	xSemaphoreGive (xI2C_Semaphore);
 	return Result;	
+}
+
+uint8_t HTU21D_Write (uint8_t reg, uint8_t * buf, uint8_t size)
+{
+	extern uint8_t HTU21D_Error;
+	xSemaphoreTake (xI2C_Semaphore, portMAX_DELAY);
+	HTU21D_Error = SW_I2C_WR(0x80, &reg, 1, buf, size);
+	xSemaphoreGive (xI2C_Semaphore);
+	return HTU21D_Error;
+}
+
+uint8_t HTU21D_Read (uint8_t reg, uint8_t * buf, uint8_t size)
+{
+	extern uint8_t HTU21D_Error;
+	xSemaphoreTake (xI2C_Semaphore, portMAX_DELAY);
+	HTU21D_Error = SW_I2C_RD_POOLING_ACK(0x80, reg, buf, size, 100);
+	xSemaphoreGive (xI2C_Semaphore);
+	return HTU21D_Error;
 }
 
 uint16_t MPU6050_CheckReadyPin (void)

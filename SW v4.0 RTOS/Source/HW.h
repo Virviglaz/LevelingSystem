@@ -49,6 +49,9 @@
 	//Pin.2 left unconnected, PC8 used in that case
 #endif
 
+/* Version 2.0 Altium */
+#define SW_5V										GPIOB, GPIO_Pin_12
+
 #define BTN_PRESSED	           (PIN_SYG(SW1) == 0)
 #define BTN_DEPRESSED					 (PIN_SYG(SW1) != 0)
 #define LevelingOnButtonCNT    3 //0.1sec * Value

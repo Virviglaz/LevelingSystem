@@ -17,11 +17,14 @@
 #include "Leveling.h"
 #include "Positions.h"
 #include <stdio.h>
+#include "HTU21D.h"
+#include "SW_I2C_Driver.h"
 
 /* Functions */
 void UartDataHandler (void);
 
 /* Tasks */
+void HTU21D_DataCollector (void * pvArg);
 void SI7005_DataCollector (void * pvArg);
 void BMP180_DataCollector (void * pvArg);
 void BME280_DataCollector (void * pvArg);
@@ -53,6 +56,7 @@ extern RTC_CorrectorStructTypeDef RTC_C;
 const int BlinkFreqTablen[] = {1000, 500, 333, 250, 200, 167, 143, 125, 111, 100};
 const int BlinkFreqTable[] = {100, 111, 125, 143, 167, 200, 250, 333, 500, 1000};
 const char BFT_size = 9;
+uint8_t HTU21D_Error;
 SensorListStructTypeDef SensList;
 
 long AutoOffTimerInit (void)
@@ -85,6 +89,8 @@ void DataCollectorTask (void * pvArg)
 		TaskError &= xTaskCreate(BMP180_DataCollector, "Int Pressure", 70, NULL, tskIDLE_PRIORITY + 1, NULL);
 	if (!Error.BME280)
 		TaskError &= xTaskCreate(BME280_DataCollector, "Int Pressure", 100, NULL, tskIDLE_PRIORITY + 1, NULL);
+	
+	TaskError &= xTaskCreate(HTU21D_DataCollector, "Int Pressure", 70, NULL, tskIDLE_PRIORITY + 1, NULL);
 	
 	if (!TaskError)
 		ErrorHandle(Task, "Task: Not created! Not enought memory.\r\n");
@@ -243,6 +249,46 @@ void RTC_CorrectionTask (void * pvArg)
 		PrintIntDataToFile(ErrLogFile, "Clock correction per day: ", RTC_C.Result, "s");
 		vTaskDelete ( NULL );
 	}	
+}
+
+void HTU21D_DataCollector (void * pvArg)
+{
+	extern uint8_t HTU21D_Write (uint8_t reg, uint8_t * buf, uint8_t size);
+	extern uint8_t HTU21D_Read (uint8_t reg, uint8_t * buf, uint8_t size);
+	
+	HTU21D_StructTypeDef * HTU21D_HumiditySensor = pvPortMalloc(sizeof(* HTU21D_HumiditySensor));
+	HTU21D_HumiditySensor->Read = HTU21D_Read;
+	HTU21D_HumiditySensor->Write = HTU21D_Write;
+	HTU21D_HumiditySensor->HTU21D_EnableHeater = HTU21D_HeaterDisabled;
+	HTU21D_HumiditySensor->HTU21D_Resolution = HTU21D_11H_11T_Lo;
+	
+	vTaskDelay(LogConfig.SI7005_ReadInt * 1000);
+	HTU21D.Init(HTU21D_HumiditySensor);
+	HTU21D_Error = HTU21D.SoftReset();
+	HTU21D.Configure();
+
+	while(HTU21D_Error == 0)
+	{
+		/* Task delay */
+		vTaskDelay(LogConfig.SI7005_ReadInt * 1000);
+		
+		SensList.intSI7005_Humdt.Err = HTU21D_Error;		
+		SensList.intSI7005_Humdt.Humidity = HTU21D.GetHumidity();
+		//SensList.intSI7005_Humdt.Humidity = HTU21D.GetTemperature();
+		
+		/* Update flags */
+		SensList.intSI7005_Humdt.isDataNotLogged = 1;
+		SensList.intSI7005_Humdt.isDataUpdated = 1;
+		
+		/* Back compatibility */
+		SensList.OneWireSensors[SI7005_SensorNumberINT].Err = HTU21D_Error;
+		SensList.OneWireSensors[SI7005_SensorNumberINT].Res[1] = SensList.intSI7005_Humdt.Humidity;
+		SensList.OneWireSensors[SI7005_SensorNumberINT].isDataUpdated = SET;
+		SensList.OneWireSensors[SI7005_SensorNumberINT].isDataNotLogged = SET;	
+	}
+	vPortFree(HTU21D_HumiditySensor);
+	PRINT("HTU21D Deleted. Error: %s", I2C_ErrorMessage[HTU21D_Error]);
+	vTaskDelete( NULL );
 }
 
 void SI7005_DataCollector (void * pvArg)
